@@ -1,0 +1,32 @@
+{
+  "env": {
+    "node": true
+  },
+
+  "rules": {
+    "curly": [0, "multi"],
+    "eqeqeq": [2, "smart"],
+    "max-depth": [1, 4],
+    "max-params": [1, 4],
+    "new-cap": 2,
+    "new-parens": 0,
+    "no-constant-condition": 1,
+    "no-div-regex": 1,
+    "no-else-return": 1,
+    "no-extra-parens": 1,
+    "no-floating-decimal": 2,
+    "no-inner-declarations": 2,
+    "no-lonely-if": 2,
+    "no-nested-ternary": 2,
+    "no-underscore-dangle": 2,
+    // https://github.com/eslint/eslint/issues/1015
+    "no-use-before-define": 1,
+    "quotes": [2, "double"],
+    "radix": 2,
+    "space-after-keywords": [2, "always"],
+    "space-in-brackets": [2, "never"],
+    "space-unary-word-ops": 2,
+    "strict": 2,
+    "wrap-iife": 2
+  }
+}
