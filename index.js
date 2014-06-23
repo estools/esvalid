@@ -16,6 +16,7 @@ function getClass(obj) {
 
 // all :: forall a. [a] -> (a -> Boolean) -> Boolean
 function all(predicate, xs) {
+  if (xs == null) return false;
   for (var i = 0, l = xs.length; i < l; ++i) {
     if (!predicate(xs[i])) return false;
   }
@@ -247,15 +248,14 @@ function isValid(node) {
       return all(isValidObjectProperty, node.properties);
 
     case "Program":
-      return node.body != null && all(function(stmt){
-          return isSourceElement(stmt) && isValid(stmt);
-        }, node.body);
+      return all(function(stmt){ return isSourceElement(stmt) && isValid(stmt); }, node.body);
 
     case "ReturnStatement":
       return node.argument == null || isExpression(node.argument) && isValid(node.argument);
 
     case "SequenceExpression":
-      return all(function(expr) { return isExpression(expr) && isValid(expr); }, node.expressions);
+      return node.expressions != null && node.expressions.length >= 2 &&
+        all(function(expr) { return isExpression(expr) && isValid(expr); }, node.expressions);
 
     case "SwitchCase":
       return (node.test == null || isExpression(node.test) && isValid(node.test)) &&
@@ -263,6 +263,7 @@ function isValid(node) {
 
     case "SwitchStatement":
       return isExpression(node.discriminant) && isValid(node.discriminant) &&
+        node.cases != null && node.cases.length >= 1 &&
         all(function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }, node.cases);
 
     case "ThisExpression":
@@ -285,9 +286,10 @@ function isValid(node) {
         isExpression(node.argument) && isValid(node.argument);
 
     case "VariableDeclaration":
-      return all(function(decl) {
-        return decl != null && decl.type === "VariableDeclarator" && isValid(decl);
-      }, node.declarations);
+      return node.declarations != null && node.declarations.length >= 1 &&
+        all(function(decl) {
+          return decl != null && decl.type === "VariableDeclarator" && isValid(decl);
+        }, node.declarations);
 
     case "VariableDeclarator":
       return isExpression(node.id) && isValid(node.id) &&
