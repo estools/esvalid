@@ -4,20 +4,20 @@ var assert = require("assert");
 var fs = require("fs");
 
 var esprima = require("esprima");
-var esvalidate = require("..");
+var esvalid = require("..");
 
 function validate(done) {
   return function(err, programText) {
     if (err) throw err;
     var program = esprima.parse(programText);
-    assert.ok(esvalidate.isValid(program));
+    assert.ok(esvalid.isValid(program));
     done();
   };
 }
 
 suite("meta", function(){
 
-  test("esvalidate itself is valid", function(done) {
+  test("esvalid itself is valid", function(done) {
     fs.readFile(require.resolve(".."), validate(done));
   });
 

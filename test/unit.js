@@ -2,8 +2,8 @@
 "use strict";
 var assert = require("assert");
 
-var esvalidate = require("..");
-var isValid = esvalidate.isValid;
+var esvalid = require("..");
+var isValid = esvalid.isValid;
 
 suite("unit", function(){
 
