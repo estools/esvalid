@@ -7,8 +7,10 @@ function valid(x, msg) { assert.ok(esvalid.isValid(x), msg); }
 function notValid(x, msg) { assert.ok(!esvalid.isValid(x), msg); }
 
 var STMT = {type: "EmptyStatement"};
+var BLOCK = {type: "BlockStatement", body: []};
 var EXPR = {type: "Literal", value: 0};
 var ID = {type: "Identifier", name: "a"};
+var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
 
 suite("unit", function(){
 
@@ -61,6 +63,22 @@ suite("unit", function(){
     notValid({type: "SwitchStatement", discriminant: EXPR, cases: null});
     notValid({type: "SwitchStatement", discriminant: EXPR, cases: []});
     valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
+  });
+
+  test("TryStatement", function() {
+    notValid({type: "TryStatement"});
+    notValid({type: "TryStatement", block: BLOCK});
+    notValid({type: "TryStatement", block: BLOCK, handler: BLOCK});
+    notValid({type: "TryStatement", block: BLOCK, handlers: []});
+    notValid({type: "TryStatement", block: BLOCK, handlers: [CATCH, null, CATCH]});
+    notValid({type: "TryStatement", block: BLOCK, handlers: [CATCH, BLOCK, CATCH]});
+    valid({type: "TryStatement", block: BLOCK, handler: CATCH});
+    valid({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
+    valid({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
+    valid({type: "TryStatement", block: BLOCK, handlers: [CATCH]});
+    valid({type: "TryStatement", block: BLOCK, handlers: [CATCH, CATCH]});
+    valid({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
+    valid({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
   });
 
   test("VariableDeclaration", function() {

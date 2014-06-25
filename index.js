@@ -273,9 +273,12 @@ function isValid(node) {
       return isExpression(node.argument) && isValid(node.argument);
 
     case "TryStatement":
+      // NOTE: TryStatement interface changed from {handlers: [CatchClause]} to {handler: CatchClause}
+      var handlers = node.handlers || (node.handler ? [node.handler] : []);
       return node.block != null && node.block.type === "BlockStatement" && isValid(node.block) &&
-        (node.handler == null || node.handler.type === "CatchClause" && isValid(node.handler)) &&
-        (node.finalizer == null || node.finalizer.type === "BlockStatement" && isValid(node.finalizer));
+        (handlers.length === 0 || all(function(h) { return h != null && h.type === "CatchClause" && isValid(h); }, handlers)) &&
+        (node.finalizer == null || node.finalizer.type === "BlockStatement" && isValid(node.finalizer)) &&
+        (handlers.length >= 1 || node.finalizer != null);
 
     case "UnaryExpression":
       return isUnaryOperator(node.operator) &&
