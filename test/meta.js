@@ -15,6 +15,7 @@ function validate(done) {
   };
 }
 
+if (!process.env.REALCOVERAGE)
 suite("meta", function(){
 
   test("esvalid itself is valid", function(done) {

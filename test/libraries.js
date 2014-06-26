@@ -15,6 +15,7 @@ function validate(done) {
   };
 }
 
+if (!process.env.REALCOVERAGE)
 // top 10 most popular npm packages
 suite("popular libraries", function(){
 
