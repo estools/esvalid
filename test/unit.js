@@ -69,6 +69,7 @@ suite("unit", function(){
     notValid({type: "ObjectExpression"});
     notValid({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
     notValid({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: STMT, value: EXPR}]});
     notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: STMT}]});
     notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: BLOCK}]});
     notValid({type: "ObjectExpression", properties: [{kind: "init", key: EXPR, value: EXPR}]});
