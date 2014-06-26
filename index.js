@@ -100,6 +100,13 @@ function isValidObjectProperty(node) {
   return false;
 }
 
+// isProblematicIfStatement :: Node -> Boolean
+function isProblematicIfStatement(node) {
+  return node.type === "IfStatement" && (
+      node.alternate != null && isProblematicIfStatement(node.alternate) ||
+      node.alternate == null && node.consequent != null && (node.consequent.type !== "IfStatement" || isProblematicIfStatement(node.consequent))
+    );
+}
 
 var ASSIGNMENT_OPERATORS = ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "|=", "^=", "&="];
 var BINARY_OPERATORS = ["==", "!=", "===", "!==", "<", "<=", ">", ">=", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "|", "^", "&", "in", "instanceof"];
@@ -220,7 +227,8 @@ function isValid(node) {
     case "IfStatement":
       return isExpression(node.test) && isValid(node.test) &&
         isStatement(node.consequent) && isValid(node.consequent) &&
-        (node.alternate == null || isStatement(node.alternate) && isValid(node.alternate));
+        (node.alternate == null || isStatement(node.alternate) && isValid(node.alternate)) &&
+        (node.alternate == null || !isProblematicIfStatement(node.consequent));
 
     case "LabeledStatement":
       return node.label != null && node.label.type === "Identifier" && isValid(node.label) &&

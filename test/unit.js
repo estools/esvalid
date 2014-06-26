@@ -42,6 +42,23 @@ suite("unit", function(){
     valid({type: "EmptyStatement", loc: null});
   });
 
+
+  test("IfStatement", function() {
+    valid({type: "IfStatement", test: EXPR, consequent: STMT});
+    valid({type: "IfStatement", test: EXPR, consequent: BLOCK});
+    valid({type: "IfStatement", test: EXPR, consequent: STMT, alternate: STMT});
+    valid({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: BLOCK});
+    valid({type: "IfStatement", test: EXPR, consequent: STMT, alternate: BLOCK});
+    valid({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: STMT});
+    notValid({type: "IfStatement", test: EXPR});
+    notValid({type: "IfStatement", test: STMT, consequent: STMT});
+    notValid({type: "IfStatement", test: EXPR, consequent: EXPR});
+    notValid({type: "IfStatement", test: EXPR, alternate: STMT});
+    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
+    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+  });
+
   test("ObjectExpression", function() {
     valid({type: "ObjectExpression", properties: []});
     valid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: EXPR}]});
