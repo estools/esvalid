@@ -89,7 +89,7 @@ function isSourceElement(node) {
 
 // isValidObjectProperty :: Node -> Boolean
 function isValidObjectProperty(node) {
-  if (node == null || !isValid(node.value) || ["init", "get", "set"].indexOf(node.kind) < 0)
+  if (node == null || !isExpression(node.value) || !isValid(node.value) || ["init", "get", "set"].indexOf(node.kind) < 0)
     return false;
   switch (node.key.type) {
     case "Identifier":

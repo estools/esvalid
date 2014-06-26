@@ -8,7 +8,9 @@ function notValid(x, msg) { assert.ok(!esvalid.isValid(x), msg); }
 
 var STMT = {type: "EmptyStatement"};
 var BLOCK = {type: "BlockStatement", body: []};
-var EXPR = {type: "Literal", value: 0};
+var EXPR = {type: "Literal", value: null};
+var NUM = {type: "Literal", value: 0};
+var STR = {type: "Literal", value: "a"};
 var ID = {type: "Identifier", name: "a"};
 var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
 
@@ -40,6 +42,22 @@ suite("unit", function(){
     valid({type: "EmptyStatement", loc: null});
   });
 
+  test("ObjectExpression", function() {
+    valid({type: "ObjectExpression", properties: []});
+    valid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: EXPR}]});
+    valid({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: EXPR}]});
+    valid({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: EXPR}]});
+    valid({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
+    valid({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
+    notValid({type: "ObjectExpression"});
+    notValid({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: STMT}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: BLOCK}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: EXPR, value: EXPR}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
+    notValid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
+  });
 
   test("Program", function() {
     notValid({type: "Program"});
