@@ -43,6 +43,16 @@ suite("unit", function(){
   });
 
 
+  test("ArrayExpression", function() {
+    valid({type: "ArrayExpression", elements: []});
+    valid({type: "ArrayExpression", elements: [null]});
+    valid({type: "ArrayExpression", elements: [EXPR]});
+    valid({type: "ArrayExpression", elements: [EXPR, EXPR]});
+    valid({type: "ArrayExpression", elements: [EXPR, null, EXPR]});
+    notValid({type: "ArrayExpression"});
+    notValid({type: "ArrayExpression", elements: [STMT]});
+  });
+
   test("IfStatement", function() {
     valid({type: "IfStatement", test: EXPR, consequent: STMT});
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK});
