@@ -4,7 +4,7 @@ var assert = require("assert");
 
 var esvalid = require("..");
 function valid(x, msg) { assert.ok(esvalid.isValid(x), msg); }
-function notValid(x, msg) { assert.ok(!esvalid.isValid(x), msg); }
+function invalid(x, msg) { assert.ok(!esvalid.isValid(x), msg); }
 
 var STMT = {type: "EmptyStatement"};
 var BLOCK = {type: "BlockStatement", body: []};
@@ -17,26 +17,26 @@ var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
 suite("unit", function(){
 
   test("non-nodes", function() {
-    notValid(null);
-    notValid(0);
-    notValid({});
-    notValid("Program");
-    notValid({type: null});
-    notValid({type: false});
-    notValid({type: ""});
-    notValid({type: "Node"});
+    invalid(null);
+    invalid(0);
+    invalid({});
+    invalid("Program");
+    invalid({type: null});
+    invalid({type: false});
+    invalid({type: ""});
+    invalid({type: "Node"});
   });
 
   test("Node", function() {
-    notValid({type: "EmptyStatement", loc: {}});
-    notValid({type: "EmptyStatement", loc: {start: null, end: 0}});
-    notValid({type: "EmptyStatement", loc: {start: {}, end: {}}});
-    notValid({type: "EmptyStatement", loc: {start: {line: "a", column: "b"}, end: {line: "a", column: "b"}}});
-    notValid({type: "EmptyStatement", loc: {start: {line: 0, column: 0}, end: {line: 1, column: 0}}});
-    notValid({type: "EmptyStatement", loc: {start: {line: 1, column: 0}, end: {line: 0, column: 0}}});
-    notValid({type: "EmptyStatement", loc: {start: {line: 1, column: -1}, end: {line: 1, column: 0}}});
-    notValid({type: "EmptyStatement", loc: {start: {line: 1, column: 0}, end: {line: 1, column: -1}}});
-    notValid({type: "EmptyStatement", loc: {source: 0, start: {line: 1, column: 0}, end: {line: 1, column: 0}}});
+    invalid({type: "EmptyStatement", loc: {}});
+    invalid({type: "EmptyStatement", loc: {start: null, end: 0}});
+    invalid({type: "EmptyStatement", loc: {start: {}, end: {}}});
+    invalid({type: "EmptyStatement", loc: {start: {line: "a", column: "b"}, end: {line: "a", column: "b"}}});
+    invalid({type: "EmptyStatement", loc: {start: {line: 0, column: 0}, end: {line: 1, column: 0}}});
+    invalid({type: "EmptyStatement", loc: {start: {line: 1, column: 0}, end: {line: 0, column: 0}}});
+    invalid({type: "EmptyStatement", loc: {start: {line: 1, column: -1}, end: {line: 1, column: 0}}});
+    invalid({type: "EmptyStatement", loc: {start: {line: 1, column: 0}, end: {line: 1, column: -1}}});
+    invalid({type: "EmptyStatement", loc: {source: 0, start: {line: 1, column: 0}, end: {line: 1, column: 0}}});
     valid({type: "EmptyStatement", loc: {start: {line: 1, column: 0}, end: {line: 1, column: 0}}});
     valid({type: "EmptyStatement", loc: {source: "", start: {line: 1, column: 0}, end: {line: 1, column: 0}}});
     valid({type: "EmptyStatement", loc: null});
@@ -49,8 +49,8 @@ suite("unit", function(){
     valid({type: "ArrayExpression", elements: [EXPR]});
     valid({type: "ArrayExpression", elements: [EXPR, EXPR]});
     valid({type: "ArrayExpression", elements: [EXPR, null, EXPR]});
-    notValid({type: "ArrayExpression"});
-    notValid({type: "ArrayExpression", elements: [STMT]});
+    invalid({type: "ArrayExpression"});
+    invalid({type: "ArrayExpression", elements: [STMT]});
   });
 
   test("IfStatement", function() {
@@ -60,13 +60,13 @@ suite("unit", function(){
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: BLOCK});
     valid({type: "IfStatement", test: EXPR, consequent: STMT, alternate: BLOCK});
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: STMT});
-    notValid({type: "IfStatement", test: EXPR});
-    notValid({type: "IfStatement", test: STMT, consequent: STMT});
-    notValid({type: "IfStatement", test: EXPR, consequent: EXPR});
-    notValid({type: "IfStatement", test: EXPR, alternate: STMT});
-    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
-    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    notValid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalid({type: "IfStatement", test: EXPR});
+    invalid({type: "IfStatement", test: STMT, consequent: STMT});
+    invalid({type: "IfStatement", test: EXPR, consequent: EXPR});
+    invalid({type: "IfStatement", test: EXPR, alternate: STMT});
+    invalid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
+    invalid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
 
   test("ObjectExpression", function() {
@@ -76,48 +76,48 @@ suite("unit", function(){
     valid({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: EXPR}]});
     valid({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
     valid({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
-    notValid({type: "ObjectExpression"});
-    notValid({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: STMT, value: EXPR}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: STMT}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: BLOCK}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: EXPR, value: EXPR}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
-    notValid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
+    invalid({type: "ObjectExpression"});
+    invalid({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: STMT, value: EXPR}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: STMT}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: BLOCK}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: EXPR, value: EXPR}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
+    invalid({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
   });
 
   test("Program", function() {
-    notValid({type: "Program"});
-    notValid({type: "Program", body: null});
+    invalid({type: "Program"});
+    invalid({type: "Program", body: null});
     valid({type: "Program", body: []});
     valid({type: "Program", body: [STMT]});
     valid({type: "Program", body: [STMT, STMT]});
-    notValid({type: "Program", body: [STMT, EXPR, STMT]});
+    invalid({type: "Program", body: [STMT, EXPR, STMT]});
   });
 
   test("SequenceExpression", function() {
-    notValid({type: "SequenceExpression"});
-    notValid({type: "SequenceExpression", expressions: null});
-    notValid({type: "SequenceExpression", expressions: []});
-    notValid({type: "SequenceExpression", expressions: [EXPR]});
+    invalid({type: "SequenceExpression"});
+    invalid({type: "SequenceExpression", expressions: null});
+    invalid({type: "SequenceExpression", expressions: []});
+    invalid({type: "SequenceExpression", expressions: [EXPR]});
     valid({type: "SequenceExpression", expressions: [EXPR, EXPR]});
   });
 
   test("SwitchStatement", function() {
-    notValid({type: "SwitchStatement", discriminant: EXPR});
-    notValid({type: "SwitchStatement", discriminant: EXPR, cases: null});
-    notValid({type: "SwitchStatement", discriminant: EXPR, cases: []});
+    invalid({type: "SwitchStatement", discriminant: EXPR});
+    invalid({type: "SwitchStatement", discriminant: EXPR, cases: null});
+    invalid({type: "SwitchStatement", discriminant: EXPR, cases: []});
     valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
   });
 
   test("TryStatement", function() {
-    notValid({type: "TryStatement"});
-    notValid({type: "TryStatement", block: BLOCK});
-    notValid({type: "TryStatement", block: BLOCK, handler: BLOCK});
-    notValid({type: "TryStatement", block: BLOCK, handlers: []});
-    notValid({type: "TryStatement", block: BLOCK, handlers: [CATCH, null, CATCH]});
-    notValid({type: "TryStatement", block: BLOCK, handlers: [CATCH, BLOCK, CATCH]});
+    invalid({type: "TryStatement"});
+    invalid({type: "TryStatement", block: BLOCK});
+    invalid({type: "TryStatement", block: BLOCK, handler: BLOCK});
+    invalid({type: "TryStatement", block: BLOCK, handlers: []});
+    invalid({type: "TryStatement", block: BLOCK, handlers: [CATCH, null, CATCH]});
+    invalid({type: "TryStatement", block: BLOCK, handlers: [CATCH, BLOCK, CATCH]});
     valid({type: "TryStatement", block: BLOCK, handler: CATCH});
     valid({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
     valid({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
@@ -128,9 +128,9 @@ suite("unit", function(){
   });
 
   test("VariableDeclaration", function() {
-    notValid({type: "VariableDeclaration"});
-    notValid({type: "VariableDeclaration", declarations: null});
-    notValid({type: "VariableDeclaration", declarations: []});
+    invalid({type: "VariableDeclaration"});
+    invalid({type: "VariableDeclaration", declarations: null});
+    invalid({type: "VariableDeclaration", declarations: []});
     valid({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
     valid({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
     valid({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
