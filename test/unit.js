@@ -86,6 +86,10 @@ suite("unit", function(){
     invalid({type: "BinaryExpression", left: EXPR, right: STMT});
   });
 
+  test("DebuggerStatement", function() {
+    valid({type: "DebuggerStatement"});
+  });
+
   test("IfStatement", function() {
     valid({type: "IfStatement", test: EXPR, consequent: STMT});
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK});
@@ -160,6 +164,10 @@ suite("unit", function(){
     invalid({type: "SwitchStatement", discriminant: EXPR, cases: null});
     invalid({type: "SwitchStatement", discriminant: EXPR, cases: []});
     valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
+  });
+
+  test("ThisExpression", function() {
+    valid({type: "ThisExpression"});
   });
 
   test("TryStatement", function() {
