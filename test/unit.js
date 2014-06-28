@@ -224,10 +224,14 @@ suite("unit", function(){
   });
 
   test("SwitchStatement", function() {
+    valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
+    valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
     invalid({type: "SwitchStatement", discriminant: EXPR});
     invalid({type: "SwitchStatement", discriminant: EXPR, cases: null});
     invalid({type: "SwitchStatement", discriminant: EXPR, cases: []});
-    valid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
+    invalid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: STMT, consequent: []}]});
+    invalid({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [EXPR]}]});
+    invalid({type: "SwitchStatement", discriminant: STMT, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
   });
 
   test("ThisExpression", function() {
