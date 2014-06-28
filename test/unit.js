@@ -13,6 +13,7 @@ var NUM = {type: "Literal", value: 0};
 var STR = {type: "Literal", value: "a"};
 var ID = {type: "Identifier", name: "a"};
 var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
+var FD = {type: "FunctionDeclaration", id: ID, params: [], body: BLOCK};
 
 suite("unit", function(){
 
@@ -102,6 +103,30 @@ suite("unit", function(){
     valid({type: "DebuggerStatement"});
   });
 
+  test("FunctionDeclaration", function() {
+    valid({type: "FunctionDeclaration", id: ID, params: [], body: BLOCK});
+    valid({type: "FunctionDeclaration", id: ID, params: [ID, ID], body: BLOCK});
+    valid({type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [FD]}});
+    invalid({type: "FunctionDeclaration"});
+    invalid({type: "FunctionDeclaration", params: [], body: BLOCK});
+    invalid({type: "FunctionDeclaration", id: null, params: [], body: BLOCK});
+    invalid({type: "FunctionDeclaration", id: ID, params: []});
+    invalid({type: "FunctionDeclaration", id: ID, body: BLOCK});
+    invalid({type: "FunctionDeclaration", id: ID, params: [null], body: BLOCK});
+  });
+
+  test("FunctionExpression", function() {
+    valid({type: "FunctionExpression", params: [], body: BLOCK});
+    valid({type: "FunctionExpression", id: null, params: [], body: BLOCK});
+    valid({type: "FunctionExpression", id: ID, params: [], body: BLOCK});
+    valid({type: "FunctionExpression", id: ID, params: [ID, ID], body: BLOCK});
+    valid({type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [FD]}});
+    invalid({type: "FunctionExpression"});
+    invalid({type: "FunctionExpression", params: []});
+    invalid({type: "FunctionExpression", body: BLOCK});
+    invalid({type: "FunctionExpression", params: [null], body: BLOCK});
+  });
+
   test("IfStatement", function() {
     valid({type: "IfStatement", test: EXPR, consequent: STMT});
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK});
@@ -159,7 +184,9 @@ suite("unit", function(){
     invalid({type: "Program", body: null});
     valid({type: "Program", body: []});
     valid({type: "Program", body: [STMT]});
+    valid({type: "Program", body: [FD]});
     valid({type: "Program", body: [STMT, STMT]});
+    valid({type: "Program", body: [STMT, FD, STMT]});
     invalid({type: "Program", body: [STMT, EXPR, STMT]});
   });
 
