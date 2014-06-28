@@ -190,6 +190,14 @@ suite("unit", function(){
     valid({type: "ThisExpression"});
   });
 
+  test("ThrowStatement", function() {
+    valid({type: "ThrowStatement", argument: ID});
+    valid({type: "ThrowStatement", argument: EXPR});
+    invalid({type: "ThrowStatement"});
+    invalid({type: "ThrowStatement", argument: null});
+    invalid({type: "ThrowStatement", argument: STMT});
+  });
+
   test("TryStatement", function() {
     invalid({type: "TryStatement"});
     invalid({type: "TryStatement", block: BLOCK});
@@ -204,6 +212,27 @@ suite("unit", function(){
     valid({type: "TryStatement", block: BLOCK, handlers: [CATCH, CATCH]});
     valid({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
     valid({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
+  });
+
+  test("UnaryExpression", function() {
+    valid({type: "UnaryExpression", operator: "+", argument: EXPR});
+    valid({type: "UnaryExpression", operator: "!", argument: EXPR});
+    invalid({type: "UnaryExpression", operator: "/", argument: EXPR});
+    invalid({type: "UnaryExpression", operator: "+", argument: STMT});
+    invalid({type: "UnaryExpression", operator: "+"});
+    invalid({type: "UnaryExpression", argument: EXPR});
+    invalid({type: "UnaryExpression"});
+  });
+
+  test("UpdateExpression", function() {
+    valid({type: "UpdateExpression", operator: "++", argument: EXPR, prefix: true});
+    valid({type: "UpdateExpression", operator: "++", argument: EXPR});
+    valid({type: "UpdateExpression", operator: "--", argument: EXPR, prefix: false});
+    invalid({type: "UpdateExpression", operator: "+", argument: EXPR, prefix: true});
+    invalid({type: "UpdateExpression", operator: "++", argument: STMT});
+    invalid({type: "UpdateExpression", operator: "++"});
+    invalid({type: "UpdateExpression", argument: EXPR});
+    invalid({type: "UpdateExpression"});
   });
 
   test("VariableDeclaration", function() {
