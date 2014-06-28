@@ -86,6 +86,18 @@ suite("unit", function(){
     invalid({type: "BinaryExpression", left: EXPR, right: STMT});
   });
 
+  test("BreakStatement", function() {
+    valid({type: "BreakStatement"});
+    valid({type: "BreakStatement", label: null});
+    valid({type: "BreakStatement", label: ID});
+  });
+
+  test("ContinueStatement", function() {
+    valid({type: "ContinueStatement"});
+    valid({type: "ContinueStatement", label: null});
+    valid({type: "ContinueStatement", label: ID});
+  });
+
   test("DebuggerStatement", function() {
     valid({type: "DebuggerStatement"});
   });
@@ -149,6 +161,14 @@ suite("unit", function(){
     valid({type: "Program", body: [STMT]});
     valid({type: "Program", body: [STMT, STMT]});
     invalid({type: "Program", body: [STMT, EXPR, STMT]});
+  });
+
+  test("ReturnStatement", function() {
+    valid({type: "ReturnStatement"});
+    valid({type: "ReturnStatement", argument: null});
+    valid({type: "ReturnStatement", argument: ID});
+    valid({type: "ReturnStatement", argument: EXPR});
+    invalid({type: "ReturnStatement", argument: STMT});
   });
 
   test("SequenceExpression", function() {
