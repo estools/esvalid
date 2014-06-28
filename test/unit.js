@@ -87,6 +87,16 @@ suite("unit", function(){
     invalid({type: "BinaryExpression", left: EXPR, right: STMT});
   });
 
+  test("Blocktatement", function() {
+    valid({type: "BlockStatement", body: []});
+    valid({type: "BlockStatement", body: [STMT]});
+    valid({type: "BlockStatement", body: [STMT, STMT]});
+    invalid({type: "BlockStatement"});
+    invalid({type: "BlockStatement", body: null});
+    invalid({type: "BlockStatement", body: [EXPR]});
+    invalid({type: "BlockStatement", body: [FD]});
+  });
+
   test("BreakStatement", function() {
     valid({type: "BreakStatement"});
     valid({type: "BreakStatement", label: null});
@@ -101,6 +111,13 @@ suite("unit", function(){
 
   test("DebuggerStatement", function() {
     valid({type: "DebuggerStatement"});
+  });
+
+  test("ExpressionStatement", function() {
+    valid({type: "ExpressionStatement", expression: EXPR});
+    invalid({type: "ExpressionStatement"});
+    invalid({type: "ExpressionStatement", expression: STMT});
+    invalid({type: "ExpressionStatement", expression: FD});
   });
 
   test("FunctionDeclaration", function() {
