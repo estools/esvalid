@@ -53,6 +53,39 @@ suite("unit", function(){
     invalid({type: "ArrayExpression", elements: [STMT]});
   });
 
+  test("AssignmentExpression", function() {
+    valid({type: "AssignmentExpression", operator: "=", left: EXPR, right: EXPR});
+    valid({type: "AssignmentExpression", operator: "+=", left: EXPR, right: EXPR});
+    invalid({type: "AssignmentExpression", operator: "||=", left: EXPR, right: EXPR});
+    invalid({type: "AssignmentExpression"});
+    invalid({type: "AssignmentExpression", left: EXPR, right: EXPR});
+    invalid({type: "AssignmentExpression", operator: "=", left: EXPR});
+    invalid({type: "AssignmentExpression", operator: "=", right: EXPR});
+    invalid({type: "AssignmentExpression", left: EXPR, right: EXPR});
+    invalid({type: "AssignmentExpression", operator: "="});
+    invalid({type: "AssignmentExpression", left: EXPR});
+    invalid({type: "AssignmentExpression", right: EXPR});
+    invalid({type: "AssignmentExpression", left: STMT, right: EXPR});
+    invalid({type: "AssignmentExpression", left: EXPR, right: STMT});
+  });
+
+  test("BinaryExpression", function() {
+    valid({type: "BinaryExpression", operator: "+", left: EXPR, right: EXPR});
+    valid({type: "BinaryExpression", operator: "&", left: EXPR, right: EXPR});
+    invalid({type: "BinaryExpression", operator: "=", left: EXPR, right: EXPR});
+    invalid({type: "BinaryExpression", operator: "||", left: EXPR, right: EXPR});
+    invalid({type: "BinaryExpression"});
+    invalid({type: "BinaryExpression", left: EXPR, right: EXPR});
+    invalid({type: "BinaryExpression", operator: "+", left: EXPR});
+    invalid({type: "BinaryExpression", operator: "+", right: EXPR});
+    invalid({type: "BinaryExpression", left: EXPR, right: EXPR});
+    invalid({type: "BinaryExpression", operator: "+"});
+    invalid({type: "BinaryExpression", left: EXPR});
+    invalid({type: "BinaryExpression", right: EXPR});
+    invalid({type: "BinaryExpression", left: STMT, right: EXPR});
+    invalid({type: "BinaryExpression", left: EXPR, right: STMT});
+  });
+
   test("IfStatement", function() {
     valid({type: "IfStatement", test: EXPR, consequent: STMT});
     valid({type: "IfStatement", test: EXPR, consequent: BLOCK});
@@ -68,6 +101,24 @@ suite("unit", function(){
     invalid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalid({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
+
+  test("LogicalExpression", function() {
+    valid({type: "LogicalExpression", operator: "||", left: EXPR, right: EXPR});
+    valid({type: "LogicalExpression", operator: "&&", left: EXPR, right: EXPR});
+    invalid({type: "LogicalExpression", operator: "=", left: EXPR, right: EXPR});
+    invalid({type: "LogicalExpression", operator: "+", left: EXPR, right: EXPR});
+    invalid({type: "LogicalExpression"});
+    invalid({type: "LogicalExpression", left: EXPR, right: EXPR});
+    invalid({type: "LogicalExpression", operator: "||", left: EXPR});
+    invalid({type: "LogicalExpression", operator: "||", right: EXPR});
+    invalid({type: "LogicalExpression", left: EXPR, right: EXPR});
+    invalid({type: "LogicalExpression", operator: "||"});
+    invalid({type: "LogicalExpression", left: EXPR});
+    invalid({type: "LogicalExpression", right: EXPR});
+    invalid({type: "LogicalExpression", left: STMT, right: EXPR});
+    invalid({type: "LogicalExpression", left: EXPR, right: STMT});
+  });
+
 
   test("ObjectExpression", function() {
     valid({type: "ObjectExpression", properties: []});
