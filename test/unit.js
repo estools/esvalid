@@ -119,6 +119,7 @@ suite("unit", function(){
     validStmt(wrapIter({type: "BreakStatement"}));
     validStmt(wrapIter({type: "BreakStatement", label: null}));
     validStmt(label(ID.name, {type: "BreakStatement", label: ID}));
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement"}]}]});
     invalidStmt({type: "BreakStatement"});
     invalidStmt(label(ID.name + ID.name, {type: "BreakStatement", label: ID}));
   });
@@ -129,6 +130,7 @@ suite("unit", function(){
     validStmt(label(ID.name, {type: "ContinueStatement", label: ID}));
     invalidStmt({type: "ContinueStatement"});
     invalidStmt(label(ID.name + ID.name, {type: "ContinueStatement", label: ID}));
+    invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "ContinueStatement"}]}]});
   });
 
   test("DebuggerStatement", function() {

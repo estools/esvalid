@@ -141,8 +141,8 @@ function isUpdateOperator(op) {
 }
 
 
-// isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean
-function isValidPrime(node, labels, inFunc, inIter) {
+// isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean -> Boolean
+function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
   if (!node.type || node.loc != null &&
     (node.loc.source != null && typeof node.loc.source != "string" ||
       node.loc.start == null ||
@@ -154,7 +154,7 @@ function isValidPrime(node, labels, inFunc, inIter) {
     )) return false;
 
   var isValid = function(node) {
-    return isValidPrime(node, labels, inFunc, inIter);
+    return isValidPrime(node, labels, inFunc, inIter, inSwitch);
   };
 
   switch (node.type) {
@@ -178,8 +178,7 @@ function isValidPrime(node, labels, inFunc, inIter) {
       return all(function(stmt) { return isStatement(stmt) && isValid(stmt); }, node.body);
 
     case "BreakStatement":
-    case "ContinueStatement":
-      return inIter && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
+      return (inIter || inSwitch) && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
 
     case "CatchClause":
       return isExpression(node.param) && isValid(node.param) &&
@@ -190,11 +189,14 @@ function isValidPrime(node, labels, inFunc, inIter) {
         isExpression(node.alternate) && isValid(node.alternate) &&
         isExpression(node.consequent) && isValid(node.consequent);
 
+    case "ContinueStatement":
+      return inIter && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
+
     case "DebuggerStatement":
       return true;
 
     case "DoWhileStatement":
-      return isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true) &&
+      return isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch) &&
         isExpression(node.test) && isValid(node.test);
 
     case "EmptyStatement":
@@ -206,23 +208,23 @@ function isValidPrime(node, labels, inFunc, inIter) {
     case "ForInStatement":
       return (isExpression(node.left) || node.left.type === "VariableDeclaration") && isValid(node.left) &&
         isExpression(node.right) && isValid(node.right) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true);
+        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
 
     case "ForStatement":
       return (node.init == null || (isExpression(node.init) || node.init.type === "VariableDeclaration") && isValid(node.init)) &&
         (node.test == null || isExpression(node.test) && isValid(node.test)) &&
         (node.update == null || isExpression(node.update) && isValid(node.update)) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true);
+        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
 
     case "FunctionDeclaration":
       return node.id != null && node.id.type === "Identifier" && isValid(node.id) &&
         all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
-        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter);
+        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
 
     case "FunctionExpression":
       return (node.id == null || node.id.type === "Identifier" && isValid(node.id)) &&
         all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
-        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter);
+        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
 
     case "Identifier":
       return isIdentifierName(node.name) && !isReservedWord(node.name);
@@ -235,7 +237,7 @@ function isValidPrime(node, labels, inFunc, inIter) {
 
     case "LabeledStatement":
       return node.label != null && node.label.type === "Identifier" && isValid(node.label) &&
-        isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter);
+        isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
 
     case "Literal":
       return ["Boolean", "Null", "Number", "RegExp", "String"].indexOf(getClass(node.value)) >= 0;
@@ -270,7 +272,7 @@ function isValidPrime(node, labels, inFunc, inIter) {
 
     case "SwitchCase":
       return (node.test == null || isExpression(node.test) && isValid(node.test)) &&
-        all(function(stmt) { return isStatement(stmt) && isValid(stmt); }, node.consequent);
+        all(function(stmt) { return isStatement(stmt) && isValidPrime(stmt, labels, inFunc, inIter, true); }, node.consequent);
 
     case "SwitchStatement":
       return isExpression(node.discriminant) && isValid(node.discriminant) &&
@@ -311,7 +313,7 @@ function isValidPrime(node, labels, inFunc, inIter) {
 
     case "WhileStatement":
       return isExpression(node.test) && isValid(node.test) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true);
+        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
 
     case "WithStatement":
       return isExpression(node.object) && isValid(node.object) &&
@@ -326,10 +328,10 @@ module.exports = {
   // isValid :: Maybe Node -> Boolean
   isValid: function isValid(node) {
     if (node == null || node.type !== "Program") return false;
-    return isValidPrime(node, [], false, false);
+    return isValidPrime(node, [], false, false, false);
   },
   // isValidExpression :: Maybe Node -> Boolean
   isValidExpression: function isValidExpression(node) {
-    return isExpression(node) && isValidPrime(node, [], false, false);
+    return isExpression(node) && isValidPrime(node, [], false, false, false);
   }
 };
