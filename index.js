@@ -87,8 +87,8 @@ function isSourceElement(node) {
   return isStatement(node) || node.type === "FunctionDeclaration";
 }
 
-// isValidObjectProperty :: Node -> Boolean
-function isValidObjectProperty(node) {
+// isValidObjectProperty :: Node -> (Node -> Boolean) -> Boolean
+function isValidObjectProperty(node, isValid) {
   if (node == null || !isExpression(node.value) || !isValid(node.value) || ["init", "get", "set"].indexOf(node.kind) < 0)
     return false;
   switch (node.key.type) {
@@ -140,8 +140,8 @@ function isUpdateOperator(op) {
 }
 
 
-// isValid :: Node -> Boolean
-function isValid(node) {
+// isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean
+function isValidPrime(node, labels, inFunction, inIter) {
   if (node == null || !node.type) return false;
 
   if (node.loc != null &&
@@ -153,6 +153,10 @@ function isValid(node) {
       typeof node.loc.end.line != "number" || node.loc.end.line < 1 ||
       typeof node.loc.end.column != "number" || node.loc.end.column < 0
     )) return false;
+
+  var isValid = function(node) {
+    return isValidPrime(node, labels, inFunction, inIter);
+  };
 
   switch (node.type) {
 
@@ -214,12 +218,12 @@ function isValid(node) {
     case "FunctionDeclaration":
       return node.id != null && node.id.type === "Identifier" && isValid(node.id) &&
         all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
-        node.body != null && node.body.type === "BlockStatement" && isValid({type: "Program", body: node.body.body});
+        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter);
 
     case "FunctionExpression":
       return (node.id == null || node.id.type === "Identifier" && isValid(node.id)) &&
         all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
-        node.body != null && node.body.type === "BlockStatement" && isValid({type: "Program", body: node.body.body});
+        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter);
 
     case "Identifier":
       return isIdentifierName(node.name) && !isReservedWord(node.name);
@@ -253,13 +257,13 @@ function isValid(node) {
         all(function(arg) { return isExpression(arg) && isValid(arg); }, node.arguments);
 
     case "ObjectExpression":
-      return all(isValidObjectProperty, node.properties);
+      return all(function(n) { return isValidObjectProperty(n, isValid); }, node.properties);
 
     case "Program":
       return all(function(stmt){ return isSourceElement(stmt) && isValid(stmt); }, node.body);
 
     case "ReturnStatement":
-      return node.argument == null || isExpression(node.argument) && isValid(node.argument);
+      return inFunction && (node.argument == null || isExpression(node.argument) && isValid(node.argument));
 
     case "SequenceExpression":
       return node.expressions != null && node.expressions.length >= 2 &&
@@ -319,5 +323,8 @@ function isValid(node) {
 }
 
 module.exports = {
-  isValid: isValid
+  // isValid :: Node -> Boolean
+  isValid: function isValid(node) {
+    return isValidPrime(node, [], false, false);
+  }
 };

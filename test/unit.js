@@ -15,6 +15,9 @@ var ID = {type: "Identifier", name: "a"};
 var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
 var FD = {type: "FunctionDeclaration", id: ID, params: [], body: BLOCK};
 
+// wrap a statement in a function
+function wrapFunction(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
+
 suite("unit", function(){
 
   test("non-nodes", function() {
@@ -208,11 +211,13 @@ suite("unit", function(){
   });
 
   test("ReturnStatement", function() {
-    valid({type: "ReturnStatement"});
-    valid({type: "ReturnStatement", argument: null});
-    valid({type: "ReturnStatement", argument: ID});
-    valid({type: "ReturnStatement", argument: EXPR});
-    invalid({type: "ReturnStatement", argument: STMT});
+    valid(wrapFunction({type: "ReturnStatement"}));
+    valid(wrapFunction({type: "ReturnStatement", argument: null}));
+    valid(wrapFunction({type: "ReturnStatement", argument: ID}));
+    valid(wrapFunction({type: "ReturnStatement", argument: EXPR}));
+    invalid({type: "ReturnStatement"});
+    invalid({type: "ReturnStatement", argument: EXPR});
+    invalid(wrapFunction({type: "ReturnStatement", argument: STMT}));
   });
 
   test("SequenceExpression", function() {
