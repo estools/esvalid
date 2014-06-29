@@ -84,7 +84,7 @@ function isStatement(node) {
 
 // isSourceElement :: Node -> Boolean
 function isSourceElement(node) {
-  return isStatement(node) || node.type === "FunctionDeclaration";
+  return isStatement(node) || node != null && node.type === "FunctionDeclaration";
 }
 
 // isValidObjectProperty :: Node -> (Node -> Boolean) -> Boolean
@@ -325,6 +325,7 @@ function isValidPrime(node, labels, inFunction, inIter) {
 module.exports = {
   // isValid :: Node -> Boolean
   isValid: function isValid(node) {
+    if (node == null || node.type !== "Program") return false;
     return isValidPrime(node, [], false, false);
   }
 };
