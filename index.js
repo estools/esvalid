@@ -68,26 +68,27 @@ var STATEMENTS = [
   "WithStatement"
 ];
 
-// isExpression :: Node -> Boolean
+// isExpression :: MaybeNode -> Boolean
 function isExpression(node) {
   return node != null && EXPRESSIONS.indexOf(node.type) >= 0;
 }
 
+// isIterationStatement :: Maybe Node -> Boolean
 function isIterationStatement(node) {
   return node != null && ITERATION_STATEMENTS.indexOf(node.type) >= 0;
 }
 
-// isStatement :: Node -> Boolean
+// isStatement :: Maybe Node -> Boolean
 function isStatement(node) {
   return node != null && STATEMENTS.indexOf(node.type) >= 0;
 }
 
-// isSourceElement :: Node -> Boolean
+// isSourceElement :: Maybe Node -> Boolean
 function isSourceElement(node) {
   return isStatement(node) || node != null && node.type === "FunctionDeclaration";
 }
 
-// isValidObjectProperty :: Node -> (Node -> Boolean) -> Boolean
+// isValidObjectProperty :: Maybe Node -> (Maybe Node -> Boolean) -> Boolean
 function isValidObjectProperty(node, isValid) {
   if (node == null || !isExpression(node.value) || !isValid(node.value) || ["init", "get", "set"].indexOf(node.kind) < 0)
     return false;
@@ -142,9 +143,7 @@ function isUpdateOperator(op) {
 
 // isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean
 function isValidPrime(node, labels, inFunction, inIter) {
-  if (node == null || !node.type) return false;
-
-  if (node.loc != null &&
+  if (!node.type || node.loc != null &&
     (node.loc.source != null && typeof node.loc.source != "string" ||
       node.loc.start == null ||
       typeof node.loc.start.line != "number" || node.loc.start.line < 1 ||
@@ -319,13 +318,18 @@ function isValidPrime(node, labels, inFunction, inIter) {
         isStatement(node.body) && isValid(node.body);
   }
 
-  return false;
+  // unreachable
+  throw new TypeError("Unrecognised node type: " + JSON.stringify(node.type));
 }
 
 module.exports = {
-  // isValid :: Node -> Boolean
+  // isValid :: Maybe Node -> Boolean
   isValid: function isValid(node) {
     if (node == null || node.type !== "Program") return false;
     return isValidPrime(node, [], false, false);
+  },
+  // isValidExpression :: Maybe Node -> Boolean
+  isValidExpression: function isValidExpression(node) {
+    return isExpression(node) && isValidPrime(node, [], false, false);
   }
 };

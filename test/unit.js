@@ -10,13 +10,11 @@ function wrapProgram(n) { return {type: "Program", body: [n]}; }
 function wrapFunction(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
 // wrap a statement in an iteration statement
 function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
-// wrap an expression in an ExpressionStatement
-function wrapExpr(n) { return {type: "ExpressionStatement", expression: n}; }
 
 function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
 function invalidStmt(x, msg) { assert.ok(!esvalid.isValid(wrapProgram(x)), msg); }
-function validExpr(x, msg) { validStmt(wrapExpr(x), msg); }
-function invalidExpr(x, msg) { invalidStmt(wrapExpr(x), msg); }
+function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
+function invalidExpr(x, msg) { assert.ok(!esvalid.isValidExpression(x), msg); }
 
 var STMT = {type: "EmptyStatement"};
 var BLOCK = {type: "BlockStatement", body: []};
@@ -34,6 +32,7 @@ suite("unit", function(){
     function invalid(x, msg) {
       assert.ok(!esvalid.isValid(x), msg);
       invalidStmt(x, msg);
+      invalidExpr(x, msg);
     }
     invalid(null);
     invalid(0);
@@ -223,6 +222,7 @@ suite("unit", function(){
     valid({type: "Program", body: [STMT, STMT]});
     valid({type: "Program", body: [STMT, FD, STMT]});
     invalid({type: "Program", body: [STMT, EXPR, STMT]});
+    invalid({type: "Program", body: [{type: "Node"}]});
   });
 
   test("ReturnStatement", function() {
