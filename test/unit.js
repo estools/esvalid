@@ -10,6 +10,8 @@ function wrapProgram(n) { return {type: "Program", body: [n]}; }
 function wrapFunction(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
 // wrap a statement in an iteration statement
 function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
+// wrap a statement in a labeled iteration statement
+function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifier", name: l}, body: wrapIter(n)}; }
 
 function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
 function invalidStmt(x, msg) { assert.ok(!esvalid.isValid(wrapProgram(x)), msg); }
@@ -114,15 +116,17 @@ suite("unit", function(){
   });
 
   test("BreakStatement", function() {
-    validStmt({type: "BreakStatement"});
-    validStmt({type: "BreakStatement", label: null});
-    validStmt({type: "BreakStatement", label: ID});
+    validStmt(wrapIter({type: "BreakStatement"}));
+    validStmt(wrapIter({type: "BreakStatement", label: null}));
+    validStmt(label(ID.name, {type: "BreakStatement", label: ID}));
+    invalidStmt(label(ID.name + ID.name, {type: "BreakStatement", label: ID}));
   });
 
   test("ContinueStatement", function() {
-    validStmt({type: "ContinueStatement"});
-    validStmt({type: "ContinueStatement", label: null});
-    validStmt({type: "ContinueStatement", label: ID});
+    validStmt(wrapIter({type: "ContinueStatement"}));
+    validStmt(wrapIter({type: "ContinueStatement", label: null}));
+    validStmt(label(ID.name, {type: "ContinueStatement", label: ID}));
+    invalidStmt(label(ID.name + ID.name, {type: "ContinueStatement", label: ID}));
   });
 
   test("DebuggerStatement", function() {

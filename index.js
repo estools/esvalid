@@ -179,7 +179,7 @@ function isValidPrime(node, labels, inFunction, inIter) {
 
     case "BreakStatement":
     case "ContinueStatement":
-      return node.label == null || node.label.type === "Identifier" && isValid(node.label);
+      return node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0;
 
     case "CatchClause":
       return isExpression(node.param) && isValid(node.param) &&
@@ -235,7 +235,7 @@ function isValidPrime(node, labels, inFunction, inIter) {
 
     case "LabeledStatement":
       return node.label != null && node.label.type === "Identifier" && isValid(node.label) &&
-        isIterationStatement(node.body) && isValid(node.body);
+        isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunction, inIter);
 
     case "Literal":
       return ["Boolean", "Null", "Number", "RegExp", "String"].indexOf(getClass(node.value)) >= 0;
