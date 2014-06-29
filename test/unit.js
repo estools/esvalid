@@ -124,6 +124,12 @@ suite("unit", function(){
     invalidStmt(label(ID.name + ID.name, {type: "BreakStatement", label: ID}));
   });
 
+  // TODO: CallExpression
+
+  // TODO: CatchClause
+
+  // TODO: ConditionalExpression
+
   test("ContinueStatement", function() {
     validStmt(wrapIter({type: "ContinueStatement"}));
     validStmt(wrapIter({type: "ContinueStatement", label: null}));
@@ -137,12 +143,22 @@ suite("unit", function(){
     validStmt({type: "DebuggerStatement"});
   });
 
+  // TODO: DoWhileStatement
+
+  test("EmptyStatement", function() {
+    validStmt({type: "EmptyStatement"});
+  });
+
   test("ExpressionStatement", function() {
     validStmt({type: "ExpressionStatement", expression: EXPR});
     invalidStmt({type: "ExpressionStatement"});
     invalidStmt({type: "ExpressionStatement", expression: STMT});
     invalidStmt({type: "ExpressionStatement", expression: FD});
   });
+
+  // TODO: ForInStatement
+
+  // TODO: ForStatement
 
   test("FunctionDeclaration", function() {
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: BLOCK});
@@ -168,6 +184,19 @@ suite("unit", function(){
     invalidExpr({type: "FunctionExpression", params: [null], body: BLOCK});
   });
 
+  test("Identifier", function() {
+    validExpr({type: "Identifier", name: "x"});
+    validExpr({type: "Identifier", name: "varx"});
+    validExpr({type: "Identifier", name: "xvar"});
+    invalidExpr({type: "Identifier"});
+    invalidExpr({type: "Identifier", name: null});
+    invalidExpr({type: "Identifier", name: ""});
+    invalidExpr({type: "Identifier", name: "var"});
+    invalidExpr({type: "Identifier", name: "implements"});
+    invalidExpr({type: "Identifier", name: "let"});
+    invalidExpr({type: "Identifier", name: "yield"});
+  });
+
   test("IfStatement", function() {
     validStmt({type: "IfStatement", test: EXPR, consequent: STMT});
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK});
@@ -182,6 +211,37 @@ suite("unit", function(){
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+  });
+
+  // TODO: LabeledStatement
+
+  test("Literal", function() {
+    validExpr({type: "Literal", value: null});
+    validExpr({type: "Literal", value: "string"});
+    validExpr({type: "Literal", value: ""});
+    validExpr({type: "Literal", value: 0});
+    validExpr({type: "Literal", value: 1});
+    validExpr({type: "Literal", value: 1e308});
+    validExpr({type: "Literal", value: 1e-308});
+    validExpr({type: "Literal", value: /./i});
+    validExpr({type: "Literal", value: new RegExp});
+    validExpr({type: "Literal", value: true});
+    validExpr({type: "Literal", value: false});
+    invalidExpr({type: "Literal"});
+    invalidExpr({type: "Literal", value: void 0});
+    invalidExpr({type: "Literal", value: -0});
+    invalidExpr({type: "Literal", value: -1});
+    invalidExpr({type: "Literal", value: -1e308});
+    invalidExpr({type: "Literal", value: -1e-308});
+    invalidExpr({type: "Literal", value: 1 / 0});
+    invalidExpr({type: "Literal", value: -1 / 0});
+    invalidExpr({type: "Literal", value: 0 / 0});
+    invalidExpr({type: "Literal", value: new Date});
+    invalidExpr({type: "Literal", value: arguments});
+    invalidExpr({type: "Literal", value: {}});
+    invalidExpr({type: "Literal", value: []});
+    invalidExpr({type: "Literal", value: [0]});
+    invalidExpr({type: "Literal", value: ["x"]});
   });
 
   test("LogicalExpression", function() {
@@ -200,6 +260,10 @@ suite("unit", function(){
     invalidExpr({type: "LogicalExpression", left: STMT, right: EXPR});
     invalidExpr({type: "LogicalExpression", left: EXPR, right: STMT});
   });
+
+  // TODO: MemberExpression
+
+  // TODO: NewExpression
 
   test("ObjectExpression", function() {
     validExpr({type: "ObjectExpression", properties: []});
@@ -250,6 +314,8 @@ suite("unit", function(){
     invalidExpr({type: "SequenceExpression", expressions: [EXPR]});
     validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR]});
   });
+
+  // TODO: SwitchCase
 
   test("SwitchStatement", function() {
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
@@ -319,6 +385,10 @@ suite("unit", function(){
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
   });
+
+  // TODO: VariableDeclarator
+
+  // TODO: WhileStatement
 
   test("WithStatement", function() {
     validStmt({type: "WithStatement", object: EXPR, body: STMT});

@@ -227,7 +227,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
 
     case "Identifier":
-      return isIdentifierName(node.name) && !isReservedWord(node.name);
+      return node.name != null && isIdentifierName(node.name) && !isReservedWord(node.name);
 
     case "IfStatement":
       return isExpression(node.test) && isValid(node.test) &&
@@ -240,7 +240,16 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
 
     case "Literal":
-      return ["Boolean", "Null", "Number", "RegExp", "String"].indexOf(getClass(node.value)) >= 0;
+      switch (getClass(node.value)) {
+        case "Boolean":
+        case "Null":
+        case "RegExp":
+        case "String":
+          return true;
+        case "Number":
+          return 1 / node.value >= 0 && node.value !== 1 / 0 && node.value !== -1 / 0;
+      }
+      return false;
 
     case "LogicalExpression":
       return isLogicalOperator(node.operator) &&
@@ -320,7 +329,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         isStatement(node.body) && isValid(node.body);
   }
 
-  // unreachable
+  // istanbul ignore next: unreachable
   throw new TypeError("Unrecognised node type: " + JSON.stringify(node.type));
 }
 
