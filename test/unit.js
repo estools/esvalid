@@ -320,4 +320,13 @@ suite("unit", function(){
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
   });
 
+  test("WithStatement", function() {
+    validStmt({type: "WithStatement", object: EXPR, body: STMT});
+    invalidStmt({type: "WithStatement"});
+    invalidStmt({type: "WithStatement", object: EXPR});
+    invalidStmt({type: "WithStatement", body: STMT});
+    invalidStmt({type: "WithStatement", object: STMT, body: STMT});
+    invalidStmt({type: "WithStatement", object: EXPR, body: EXPR});
+  });
+
 });
