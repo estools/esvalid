@@ -141,7 +141,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
     case "FunctionDeclaration":
       return node.id != null && node.id.type === "Identifier" && isValid(node.id) &&
         all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
-        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
+        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, [], true, inIter, inSwitch);
 
     case "FunctionExpression":
       return (node.id == null || node.id.type === "Identifier" && isValid(node.id)) &&
@@ -158,8 +158,8 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         (node.alternate == null || !isProblematicIfStatement(node.consequent));
 
     case "LabeledStatement":
-      return node.label != null && node.label.type === "Identifier" && isValid(node.label) &&
-        isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
+      return node.label != null && node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) < 0 &&
+        isStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
 
     case "Literal":
       switch (getClass(node.value)) {

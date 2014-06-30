@@ -4,19 +4,6 @@ var assert = require("assert");
 
 var esvalid = require("..");
 
-// wrap a statement in a program
-function wrapProgram(n) { return {type: "Program", body: [n]}; }
-// wrap a statement in a function expression
-function wrapFunction(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
-// wrap a statement in an iteration statement
-function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
-// wrap a statement in a labeled iteration statement
-function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifier", name: l}, body: wrapIter(n)}; }
-
-function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
-function invalidStmt(x, msg) { assert.ok(!esvalid.isValid(wrapProgram(x)), msg); }
-function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
-function invalidExpr(x, msg) { assert.ok(!esvalid.isValidExpression(x), msg); }
 
 var STMT = {type: "EmptyStatement"};
 var BLOCK = {type: "BlockStatement", body: []};
@@ -25,7 +12,23 @@ var NUM = {type: "Literal", value: 0};
 var STR = {type: "Literal", value: "a"};
 var ID = {type: "Identifier", name: "a"};
 var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
-var FD = {type: "FunctionDeclaration", id: ID, params: [], body: BLOCK};
+
+// wrap a statement in a program
+function wrapProgram(n) { return {type: "Program", body: [n]}; }
+// wrap a statement in an iteration statement
+function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
+// wrap a statement in a function expression
+function FE(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
+// wrap a statement in a function declaration
+function FD(n) { return {type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [n]}}; }
+// wrap a statement in an iteration statement
+function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifier", name: l}, body: n}; }
+
+
+function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
+function invalidStmt(x, msg) { assert.ok(!esvalid.isValid(wrapProgram(x)), msg); }
+function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
+function invalidExpr(x, msg) { assert.ok(!esvalid.isValidExpression(x), msg); }
 
 
 suite("unit", function(){
@@ -112,16 +115,16 @@ suite("unit", function(){
     invalidStmt({type: "BlockStatement"});
     invalidStmt({type: "BlockStatement", body: null});
     invalidStmt({type: "BlockStatement", body: [EXPR]});
-    invalidStmt({type: "BlockStatement", body: [FD]});
+    invalidStmt({type: "BlockStatement", body: [FD(STMT)]});
   });
 
   test("BreakStatement", function() {
     validStmt(wrapIter({type: "BreakStatement"}));
     validStmt(wrapIter({type: "BreakStatement", label: null}));
-    validStmt(label(ID.name, {type: "BreakStatement", label: ID}));
+    validStmt(label(ID.name, wrapIter({type: "BreakStatement", label: ID})));
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement"}]}]});
     invalidStmt({type: "BreakStatement"});
-    invalidStmt(label(ID.name + ID.name, {type: "BreakStatement", label: ID}));
+    invalidStmt(label(ID.name + ID.name, wrapIter({type: "BreakStatement", label: ID})));
   });
 
   // TODO: CallExpression
@@ -133,9 +136,9 @@ suite("unit", function(){
   test("ContinueStatement", function() {
     validStmt(wrapIter({type: "ContinueStatement"}));
     validStmt(wrapIter({type: "ContinueStatement", label: null}));
-    validStmt(label(ID.name, {type: "ContinueStatement", label: ID}));
+    validStmt(label(ID.name, wrapIter({type: "ContinueStatement", label: ID})));
     invalidStmt({type: "ContinueStatement"});
-    invalidStmt(label(ID.name + ID.name, {type: "ContinueStatement", label: ID}));
+    invalidStmt(label(ID.name + ID.name, wrapIter({type: "ContinueStatement", label: ID})));
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "ContinueStatement"}]}]});
   });
 
@@ -153,7 +156,7 @@ suite("unit", function(){
     validStmt({type: "ExpressionStatement", expression: EXPR});
     invalidStmt({type: "ExpressionStatement"});
     invalidStmt({type: "ExpressionStatement", expression: STMT});
-    invalidStmt({type: "ExpressionStatement", expression: FD});
+    invalidStmt({type: "ExpressionStatement", expression: FD(STMT)});
   });
 
   // TODO: ForInStatement
@@ -163,7 +166,7 @@ suite("unit", function(){
   test("FunctionDeclaration", function() {
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: BLOCK});
     validStmt({type: "FunctionDeclaration", id: ID, params: [ID, ID], body: BLOCK});
-    validStmt({type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [FD]}});
+    validStmt({type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [FD(STMT)]}});
     invalidStmt({type: "FunctionDeclaration"});
     invalidStmt({type: "FunctionDeclaration", params: [], body: BLOCK});
     invalidStmt({type: "FunctionDeclaration", id: null, params: [], body: BLOCK});
@@ -177,7 +180,7 @@ suite("unit", function(){
     validExpr({type: "FunctionExpression", id: null, params: [], body: BLOCK});
     validExpr({type: "FunctionExpression", id: ID, params: [], body: BLOCK});
     validExpr({type: "FunctionExpression", id: ID, params: [ID, ID], body: BLOCK});
-    validExpr({type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [FD]}});
+    validExpr({type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [FD(STMT)]}});
     invalidExpr({type: "FunctionExpression"});
     invalidExpr({type: "FunctionExpression", params: []});
     invalidExpr({type: "FunctionExpression", body: BLOCK});
@@ -213,7 +216,19 @@ suite("unit", function(){
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
 
-  // TODO: LabeledStatement
+
+  test("LabeledStatement", function() {
+    validStmt({type: "LabeledStatement", label: ID, body: STMT});
+    validStmt(label("a", label("b", STMT)));
+    validStmt(label("y", {type: "ExpressionStatement", expression: FE(FD(label("a", STMT)))}));
+    invalidStmt({type: "LabeledStatement"});
+    invalidStmt({type: "LabeledStatement", label: null, body: STMT});
+    invalidStmt({type: "LabeledStatement", label: 0, body: STMT});
+    invalidStmt({type: "LabeledStatement", label: ID, body: null});
+    invalidStmt({type: "LabeledStatement", label: ID, body: false});
+    invalidStmt(label("a", label("a", STMT)));
+    invalidStmt(label("a", FE(label("a", STMT))));
+  });
 
   test("Literal", function() {
     validExpr({type: "Literal", value: null});
@@ -290,21 +305,21 @@ suite("unit", function(){
     invalid({type: "Program", body: null});
     valid({type: "Program", body: []});
     valid({type: "Program", body: [STMT]});
-    valid({type: "Program", body: [FD]});
+    valid({type: "Program", body: [FD(STMT)]});
     valid({type: "Program", body: [STMT, STMT]});
-    valid({type: "Program", body: [STMT, FD, STMT]});
+    valid({type: "Program", body: [STMT, FD(STMT), STMT]});
     invalid({type: "Program", body: [STMT, EXPR, STMT]});
     invalid({type: "Program", body: [{type: "Node"}]});
   });
 
   test("ReturnStatement", function() {
-    validExpr(wrapFunction({type: "ReturnStatement"}));
-    validExpr(wrapFunction({type: "ReturnStatement", argument: null}));
-    validExpr(wrapFunction({type: "ReturnStatement", argument: ID}));
-    validExpr(wrapFunction({type: "ReturnStatement", argument: EXPR}));
+    validExpr(FE({type: "ReturnStatement"}));
+    validExpr(FE({type: "ReturnStatement", argument: null}));
+    validExpr(FE({type: "ReturnStatement", argument: ID}));
+    validExpr(FE({type: "ReturnStatement", argument: EXPR}));
     invalidStmt({type: "ReturnStatement"});
     invalidStmt({type: "ReturnStatement", argument: EXPR});
-    invalidExpr(wrapFunction({type: "ReturnStatement", argument: STMT}));
+    invalidExpr(FE({type: "ReturnStatement", argument: STMT}));
   });
 
   test("SequenceExpression", function() {
