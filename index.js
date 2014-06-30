@@ -237,7 +237,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
 
     case "LabeledStatement":
       return node.label != null && node.label.type === "Identifier" && isValid(node.label) &&
-        isIterationStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
+        isStatement(node.body) && labels.indexOf(node.label.name) === -1 && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
 
     case "Literal":
       switch (getClass(node.value)) {
