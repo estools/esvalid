@@ -1,6 +1,6 @@
 {
   "name": "esvalid",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "confirm that a SpiderMonkey format AST represents an ECMAScript program",
   "main": "index",
   "scripts": {
