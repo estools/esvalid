@@ -1,14 +1,6 @@
 "use strict";
 var esutils = require("esutils");
 
-var isIdentifierName = esutils.keyword.isIdentifierName;
-
-// isReservedWord :: String -> Boolean
-function isReservedWord(id) {
-  return id === "null" || id === "true" || id === "false" ||
-    esutils.keyword.isKeywordES6(id, true);
-}
-
 // getClass :: Object -> String
 function getClass(obj) {
   return {}.toString.call(obj).slice(8, -1);
@@ -23,70 +15,14 @@ function all(predicate, xs) {
   return true;
 }
 
-var EXPRESSIONS = [
-  "ArrayExpression",
-  "AssignmentExpression",
-  "BinaryExpression",
-  "CallExpression",
-  "ConditionalExpression",
-  "FunctionExpression",
-  "Identifier",
-  "Literal",
-  "LogicalExpression",
-  "MemberExpression",
-  "NewExpression",
-  "ObjectExpression",
-  "SequenceExpression",
-  "ThisExpression",
-  "UnaryExpression",
-  "UpdateExpression"
-];
-var ITERATION_STATEMENTS = [
-  "DoWhileStatement",
-  "ForInStatement",
-  "ForStatement",
-  "WhileStatement"
-];
-var STATEMENTS = [
-  "BlockStatement",
-  "BreakStatement",
-  "ContinueStatement",
-  "DebuggerStatement",
-  "DoWhileStatement",
-  "EmptyStatement",
-  "ExpressionStatement",
-  "ForInStatement",
-  "ForStatement",
-  "IfStatement",
-  "LabeledStatement",
-  "ReturnStatement",
-  "SwitchStatement",
-  "ThrowStatement",
-  "TryStatement",
-  "VariableDeclaration",
-  "WhileStatement",
-  "WithStatement"
-];
-
-// isExpression :: MaybeNode -> Boolean
-function isExpression(node) {
-  return node != null && EXPRESSIONS.indexOf(node.type) >= 0;
-}
-
+// isExpression :: Maybe Node -> Boolean
+function isExpression(node) { return node != null && esutils.ast.isExpression(node); }
 // isIterationStatement :: Maybe Node -> Boolean
-function isIterationStatement(node) {
-  return node != null && ITERATION_STATEMENTS.indexOf(node.type) >= 0;
-}
-
+function isIterationStatement(node) { return node != null && esutils.ast.isIterationStatement(node); }
 // isStatement :: Maybe Node -> Boolean
-function isStatement(node) {
-  return node != null && STATEMENTS.indexOf(node.type) >= 0;
-}
-
+function isStatement(node) { return node != null && esutils.ast.isStatement(node); }
 // isSourceElement :: Maybe Node -> Boolean
-function isSourceElement(node) {
-  return isStatement(node) || node != null && node.type === "FunctionDeclaration";
-}
+function isSourceElement(node) { return node != null && esutils.ast.isSourceElement(node); }
 
 // isValidObjectProperty :: Maybe Node -> (Maybe Node -> Boolean) -> Boolean
 function isValidObjectProperty(node, isValid) {
@@ -94,7 +30,7 @@ function isValidObjectProperty(node, isValid) {
     return false;
   switch (node.key.type) {
     case "Identifier":
-      return isIdentifierName(node.key.name);
+      return esutils.keyword.isIdentifierName(node.key.name);
     case "Literal":
       return ["Number", "String"].indexOf(getClass(node.key.value)) >= 0;
   }
@@ -116,29 +52,15 @@ var UNARY_OPERATORS = ["-", "+", "!", "~", "typeof", "void", "delete"];
 var UPDATE_OPERATORS = ["++", "--"];
 
 // isAssignmentOperator :: String -> Boolean
-function isAssignmentOperator(op) {
-  return ASSIGNMENT_OPERATORS.indexOf(op) >= 0;
-}
-
+function isAssignmentOperator(op) { return ASSIGNMENT_OPERATORS.indexOf(op) >= 0; }
 // isBinaryOperator :: String -> Boolean
-function isBinaryOperator(op) {
-  return BINARY_OPERATORS.indexOf(op) >= 0;
-}
-
+function isBinaryOperator(op) { return BINARY_OPERATORS.indexOf(op) >= 0; }
 // isLogicalOperator :: String -> Boolean
-function isLogicalOperator(op) {
-  return LOGICAL_OPERATORS.indexOf(op) >= 0;
-}
-
+function isLogicalOperator(op) { return LOGICAL_OPERATORS.indexOf(op) >= 0; }
 // isUnaryOperator :: String -> Boolean
-function isUnaryOperator(op) {
-  return UNARY_OPERATORS.indexOf(op) >= 0;
-}
-
+function isUnaryOperator(op) { return UNARY_OPERATORS.indexOf(op) >= 0; }
 // isUpdateOperator :: String -> Boolean
-function isUpdateOperator(op) {
-  return UPDATE_OPERATORS.indexOf(op) >= 0;
-}
+function isUpdateOperator(op) { return UPDATE_OPERATORS.indexOf(op) >= 0; }
 
 
 // isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean -> Boolean
@@ -227,7 +149,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
 
     case "Identifier":
-      return node.name != null && isIdentifierName(node.name) && !isReservedWord(node.name);
+      return node.name != null && esutils.keyword.isIdentifierName(node.name) && !esutils.keyword.isReservedWordES6(node.name, true);
 
     case "IfStatement":
       return isExpression(node.test) && isValid(node.test) &&
@@ -259,7 +181,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
     case "MemberExpression":
       return isExpression(node.object) && isValid(node.object) &&
         (node.computed && isExpression(node.property) && isValid(node.property) ||
-          !node.computed && node.property != null && node.property.type === "Identifier" && isIdentifierName(node.property.name));
+          !node.computed && node.property != null && node.property.type === "Identifier" && esutils.keyword.isIdentifierName(node.property.name));
 
     case "CallExpression":
     case "NewExpression":
