@@ -17,8 +17,6 @@ function all(predicate, xs) {
 
 // isExpression :: Maybe Node -> Boolean
 function isExpression(node) { return node != null && esutils.ast.isExpression(node); }
-// isIterationStatement :: Maybe Node -> Boolean
-function isIterationStatement(node) { return node != null && esutils.ast.isIterationStatement(node); }
 // isStatement :: Maybe Node -> Boolean
 function isStatement(node) { return node != null && esutils.ast.isStatement(node); }
 // isSourceElement :: Maybe Node -> Boolean
