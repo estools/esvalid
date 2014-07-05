@@ -131,7 +131,19 @@ suite("unit", function(){
 
   // TODO: CatchClause
 
-  // TODO: ConditionalExpression
+  test("ConditionalExpression", function() {
+    validExpr({type: "ConditionalExpression", test: EXPR, alternate: EXPR, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression"});
+    invalidExpr({type: "ConditionalExpression", alternate: EXPR, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, alternate: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: STMT, alternate: EXPR, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, alternate: STMT, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, alternate: EXPR, consequent: STMT});
+    invalidExpr({type: "ConditionalExpression", test: null, alternate: EXPR, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, alternate: null, consequent: EXPR});
+    invalidExpr({type: "ConditionalExpression", test: EXPR, alternate: EXPR, consequent: null});
+  });
 
   test("ContinueStatement", function() {
     validStmt(wrapIter({type: "ContinueStatement"}));
