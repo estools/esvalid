@@ -276,7 +276,21 @@ suite("unit", function(){
     invalidExpr({type: "LogicalExpression", left: EXPR, right: STMT});
   });
 
-  // TODO: MemberExpression
+  test("MemberExpression", function() {
+    validExpr({type: "MemberExpression", computed: true, object: EXPR, property: EXPR});
+    validExpr({type: "MemberExpression", computed: true, object: EXPR, property: ID});
+    validExpr({type: "MemberExpression", computed: true, object: EXPR, property: NUM});
+    validExpr({type: "MemberExpression", computed: false, object: EXPR, property: ID});
+    validExpr({type: "MemberExpression", object: EXPR, property: ID});
+    invalidExpr({type: "MemberExpression"});
+    invalidExpr({type: "MemberExpression", computed: true, object: EXPR});
+    invalidExpr({type: "MemberExpression", computed: true, property: EXPR});
+    invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: NUM});
+    invalidExpr({type: "MemberExpression", computed: true, object: STMT, property: EXPR});
+    invalidExpr({type: "MemberExpression", computed: false, object: STMT, property: ID});
+    invalidExpr({type: "MemberExpression", computed: true, object: EXPR, property: STMT});
+    invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: EXPR});
+  });
 
   // TODO: NewExpression
 
