@@ -213,7 +213,15 @@ suite("unit", function(){
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
 
-  // TODO: LabeledStatement
+
+  test("LabeledStatement", function() {
+    validStmt({type: "LabeledStatement", label: ID, body: STMT});
+    validStmt({type: "LabeledStatement", label: {type: "Identifier", name: "a"}, body: {type: "LabeledStatement", label: {type: "Identifier", name: "b"}, body: STMT}});
+    invalidStmt({type: "LabeledStatement", label: null, body: STMT});
+    invalidStmt({type: "LabeledStatement", label: 20, body: STMT});
+    invalidStmt({type: "LabeledStatement", label: ID, body: null});
+    invalidStmt({type: "LabeledStatement", label: ID, body: {type: "LabeledStatement", label: ID, body: STMT}});
+  });
 
   test("Literal", function() {
     validExpr({type: "Literal", value: null});
