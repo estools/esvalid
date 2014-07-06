@@ -15,6 +15,16 @@ function all(predicate, xs) {
   return true;
 }
 
+// filter :: forall a. [a] -> (a -> Boolean) -> [a]
+function filter(predicate, xs) {
+  if (xs == null) return [];
+  var filtered = [];
+  for (var i = 0, l = xs.length; i < l; ++i) {
+    if (predicate(xs[i])) filtered.push(xs[i]);
+  }
+  return filtered;
+}
+
 // isExpression :: Maybe Node -> Boolean
 function isExpression(node) { return node != null && esutils.ast.isExpression(node); }
 // isStatement :: Maybe Node -> Boolean
@@ -206,7 +216,8 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
     case "SwitchStatement":
       return isExpression(node.discriminant) && isValid(node.discriminant) &&
         node.cases != null && node.cases.length >= 1 &&
-        all(function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }, node.cases);
+        all(function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }, node.cases) &&
+        filter(function(c) { return c.test == null; }, node.cases).length < 2;
 
     case "ThisExpression":
       return true;

@@ -359,6 +359,8 @@ suite("unit", function(){
   // TODO: SwitchCase
 
   test("SwitchStatement", function() {
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR});
@@ -367,6 +369,7 @@ suite("unit", function(){
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: STMT, consequent: []}]});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [EXPR]}]});
     invalidStmt({type: "SwitchStatement", discriminant: STMT, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
+    invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
   });
 
   test("ThisExpression", function() {
