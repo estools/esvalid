@@ -6,8 +6,8 @@ function getClass(obj) {
   return {}.toString.call(obj).slice(8, -1);
 }
 
-// all :: forall a. [a] -> (a -> Boolean) -> Boolean
-function all(predicate, xs) {
+// all :: forall a. (a -> Boolean) -> [a] -> Boolean
+function all(xs, predicate) {
   if (xs == null) return false;
   for (var i = 0, l = xs.length; i < l; ++i) {
     if (!predicate(xs[i])) return false;
@@ -15,8 +15,8 @@ function all(predicate, xs) {
   return true;
 }
 
-// filter :: forall a. [a] -> (a -> Boolean) -> [a]
-function filter(predicate, xs) {
+// filter :: forall a. (a -> Boolean) -> [a] -> [a]
+function filter(xs, predicate) {
   if (xs == null) return [];
   var filtered = [];
   for (var i = 0, l = xs.length; i < l; ++i) {
@@ -90,9 +90,9 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
   switch (node.type) {
 
     case "ArrayExpression":
-      return all(function(element) {
+      return all(node.elements, function(element) {
           return element == null || isExpression(element) && isValid(element);
-        }, node.elements);
+        });
 
     case "AssignmentExpression":
       return isAssignmentOperator(node.operator) &&
@@ -105,7 +105,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
         isExpression(node.right) && isValid(node.right);
 
     case "BlockStatement":
-      return all(function(stmt) { return isStatement(stmt) && isValid(stmt); }, node.body);
+      return all(node.body, function(stmt) { return isStatement(stmt) && isValid(stmt); });
 
     case "BreakStatement":
       return (inIter || inSwitch) && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
@@ -148,12 +148,12 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
 
     case "FunctionDeclaration":
       return node.id != null && node.id.type === "Identifier" && isValid(node.id) &&
-        all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
+        all(node.params, function(param){ return isExpression(param) && isValid(param); }) &&
         node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, [], true, inIter, inSwitch);
 
     case "FunctionExpression":
       return (node.id == null || node.id.type === "Identifier" && isValid(node.id)) &&
-        all(function(param){ return isExpression(param) && isValid(param); }, node.params) &&
+        all(node.params, function(param){ return isExpression(param) && isValid(param); }) &&
         node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
 
     case "Identifier":
@@ -194,30 +194,30 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
     case "CallExpression":
     case "NewExpression":
       return isExpression(node.callee) && isValid(node.callee) &&
-        all(function(arg) { return isExpression(arg) && isValid(arg); }, node.arguments);
+        all(node.arguments, function(arg) { return isExpression(arg) && isValid(arg); });
 
     case "ObjectExpression":
-      return all(function(n) { return isValidObjectProperty(n, isValid); }, node.properties);
+      return all(node.properties, function(n) { return isValidObjectProperty(n, isValid); });
 
     case "Program":
-      return all(function(stmt){ return isSourceElement(stmt) && isValid(stmt); }, node.body);
+      return all(node.body, function(stmt){ return isSourceElement(stmt) && isValid(stmt); });
 
     case "ReturnStatement":
       return inFunc && (node.argument == null || isExpression(node.argument) && isValid(node.argument));
 
     case "SequenceExpression":
       return node.expressions != null && node.expressions.length >= 2 &&
-        all(function(expr) { return isExpression(expr) && isValid(expr); }, node.expressions);
+        all(node.expressions, function(expr) { return isExpression(expr) && isValid(expr); });
 
     case "SwitchCase":
       return (node.test == null || isExpression(node.test) && isValid(node.test)) &&
-        all(function(stmt) { return isStatement(stmt) && isValidPrime(stmt, labels, inFunc, inIter, true); }, node.consequent);
+        all(node.consequent, function(stmt) { return isStatement(stmt) && isValidPrime(stmt, labels, inFunc, inIter, true); });
 
     case "SwitchStatement":
       return isExpression(node.discriminant) && isValid(node.discriminant) &&
         node.cases != null && node.cases.length >= 1 &&
-        all(function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }, node.cases) &&
-        filter(function(c) { return c.test == null; }, node.cases).length < 2;
+        all(node.cases, function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }) &&
+        filter(node.cases, function(c) { return c.test == null; }).length < 2;
 
     case "ThisExpression":
       return true;
@@ -229,7 +229,7 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
       // NOTE: TryStatement interface changed from {handlers: [CatchClause]} to {handler: CatchClause}
       var handlers = node.handlers || (node.handler ? [node.handler] : []);
       return node.block != null && node.block.type === "BlockStatement" && isValid(node.block) &&
-        (handlers.length === 0 || all(function(h) { return h != null && h.type === "CatchClause" && isValid(h); }, handlers)) &&
+        (handlers.length === 0 || all(handlers, function(h) { return h != null && h.type === "CatchClause" && isValid(h); })) &&
         (node.finalizer == null || node.finalizer.type === "BlockStatement" && isValid(node.finalizer)) &&
         (handlers.length >= 1 || node.finalizer != null);
 
@@ -243,9 +243,9 @@ function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
 
     case "VariableDeclaration":
       return node.declarations != null && node.declarations.length >= 1 &&
-        all(function(decl) {
+        all(node.declarations, function(decl) {
           return decl != null && decl.type === "VariableDeclarator" && isValid(decl);
-        }, node.declarations);
+        });
 
     case "VariableDeclarator":
       return isExpression(node.id) && isValid(node.id) &&
