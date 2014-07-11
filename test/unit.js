@@ -114,6 +114,7 @@ suite("unit", function(){
     validStmt({type: "BlockStatement", body: [STMT, STMT]});
     invalidStmt({type: "BlockStatement"});
     invalidStmt({type: "BlockStatement", body: null});
+    invalidStmt({type: "BlockStatement", body: [null]});
     invalidStmt({type: "BlockStatement", body: [EXPR]});
     invalidStmt({type: "BlockStatement", body: [FD(STMT)]});
   });
@@ -124,6 +125,7 @@ suite("unit", function(){
     validStmt(label(ID.name, wrapIter({type: "BreakStatement", label: ID})));
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement"}]}]});
     invalidStmt({type: "BreakStatement"});
+    invalidStmt(wrapIter({type: "BreakStatement", label: STMT}));
     invalidStmt(label(ID.name + ID.name, wrapIter({type: "BreakStatement", label: ID})));
   });
 
@@ -150,6 +152,7 @@ suite("unit", function(){
     validStmt(wrapIter({type: "ContinueStatement", label: null}));
     validStmt(label(ID.name, wrapIter({type: "ContinueStatement", label: ID})));
     invalidStmt({type: "ContinueStatement"});
+    invalidStmt(wrapIter({type: "ContinueStatement", label: STMT}));
     invalidStmt(label(ID.name + ID.name, wrapIter({type: "ContinueStatement", label: ID})));
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "ContinueStatement"}]}]});
   });
@@ -183,8 +186,10 @@ suite("unit", function(){
     invalidStmt({type: "FunctionDeclaration", params: [], body: BLOCK});
     invalidStmt({type: "FunctionDeclaration", id: null, params: [], body: BLOCK});
     invalidStmt({type: "FunctionDeclaration", id: ID, params: []});
+    invalidStmt({type: "FunctionDeclaration", id: STMT, params: [], body: BLOCK});
     invalidStmt({type: "FunctionDeclaration", id: ID, body: BLOCK});
     invalidStmt({type: "FunctionDeclaration", id: ID, params: [null], body: BLOCK});
+    invalidStmt({type: "FunctionDeclaration", id: ID, params: [STMT], body: BLOCK});
   });
 
   test("FunctionExpression", function() {
@@ -197,6 +202,8 @@ suite("unit", function(){
     invalidExpr({type: "FunctionExpression", params: []});
     invalidExpr({type: "FunctionExpression", body: BLOCK});
     invalidExpr({type: "FunctionExpression", params: [null], body: BLOCK});
+    invalidExpr({type: "FunctionExpression", id: STMT, params: [], body: BLOCK});
+    invalidExpr({type: "FunctionExpression", id: ID, params: [STMT], body: BLOCK});
   });
 
   test("Identifier", function() {
@@ -219,10 +226,12 @@ suite("unit", function(){
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: STMT, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: STMT});
+    invalidStmt({type: "IfStatement"});
     invalidStmt({type: "IfStatement", test: EXPR});
     invalidStmt({type: "IfStatement", test: STMT, consequent: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: EXPR});
     invalidStmt({type: "IfStatement", test: EXPR, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: STMT, alternate: EXPR});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
@@ -294,6 +303,7 @@ suite("unit", function(){
     validExpr({type: "MemberExpression", computed: true, object: EXPR, property: NUM});
     validExpr({type: "MemberExpression", computed: false, object: EXPR, property: ID});
     validExpr({type: "MemberExpression", object: EXPR, property: ID});
+    validExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "var"}});
     invalidExpr({type: "MemberExpression"});
     invalidExpr({type: "MemberExpression", computed: true, object: EXPR});
     invalidExpr({type: "MemberExpression", computed: true, property: EXPR});
@@ -302,6 +312,9 @@ suite("unit", function(){
     invalidExpr({type: "MemberExpression", computed: false, object: STMT, property: ID});
     invalidExpr({type: "MemberExpression", computed: true, object: EXPR, property: STMT});
     invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: EXPR});
+    invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier"}});
+    invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: null}});
+    invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: ""}});
   });
 
   // TODO: NewExpression
@@ -313,13 +326,19 @@ suite("unit", function(){
     validExpr({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
     invalidExpr({type: "ObjectExpression"});
+    invalidExpr({type: "ObjectExpression", properties: [null]});
     invalidExpr({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
+    invalidExpr({type: "ObjectExpression", properties: [{kind: "init", value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: STMT, value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: STMT}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: BLOCK}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: EXPR, value: EXPR}]});
+    invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: null}, value: EXPR}]});
+    invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: ""}, value: EXPR}]});
+    invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "a-b"}, value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
   });
@@ -353,6 +372,8 @@ suite("unit", function(){
     invalidExpr({type: "SequenceExpression", expressions: null});
     invalidExpr({type: "SequenceExpression", expressions: []});
     invalidExpr({type: "SequenceExpression", expressions: [EXPR]});
+    invalidExpr({type: "SequenceExpression", expressions: [EXPR, STMT]});
+    invalidExpr({type: "SequenceExpression", expressions: [EXPR, null]});
     validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR]});
   });
 
@@ -363,9 +384,12 @@ suite("unit", function(){
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
+    invalidStmt({type: "SwitchStatement"});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: null});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: []});
+    invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [null]});
+    invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [ID]});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: STMT, consequent: []}]});
     invalidStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [EXPR]}]});
     invalidStmt({type: "SwitchStatement", discriminant: STMT, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
@@ -387,6 +411,10 @@ suite("unit", function(){
   test("TryStatement", function() {
     invalidStmt({type: "TryStatement"});
     invalidStmt({type: "TryStatement", block: BLOCK});
+    invalidStmt({type: "TryStatement", handler: CATCH});
+    invalidStmt({type: "TryStatement", handlers: [CATCH]});
+    invalidStmt({type: "TryStatement", block: EXPR, handler: CATCH});
+    invalidStmt({type: "TryStatement", block: BLOCK, finalizer: EXPR});
     invalidStmt({type: "TryStatement", block: BLOCK, handler: BLOCK});
     invalidStmt({type: "TryStatement", block: BLOCK, handlers: []});
     invalidStmt({type: "TryStatement", block: BLOCK, handlers: [CATCH, null, CATCH]});
@@ -425,6 +453,8 @@ suite("unit", function(){
     invalidStmt({type: "VariableDeclaration"});
     invalidStmt({type: "VariableDeclaration", declarations: null});
     invalidStmt({type: "VariableDeclaration", declarations: []});
+    invalidStmt({type: "VariableDeclaration", declarations: [null]});
+    invalidStmt({type: "VariableDeclaration", declarations: [ID]});
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});

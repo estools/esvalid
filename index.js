@@ -453,7 +453,7 @@ function errorsP(state) {
             else
               switch (property.key.type) {
                 case "Identifier":
-                  if (!esutils.keyword.isIdentifierName(property.key.name))
+                  if (property.key.name == null || !esutils.keyword.isIdentifierName(property.key.name))
                     es.push(new E(property, "ObjectExpression property `key` members of type Identifier must be an IdentifierName"));
                   break;
                 case "Literal":
@@ -565,10 +565,10 @@ function errorsP(state) {
       case "TryStatement":
         // NOTE: TryStatement interface changed from {handlers: [CatchClause]} to {handler: CatchClause}; we support both
         var handlers = node.handlers || (node.handler ? [node.handler] : []);
-        if (node.block != null && node.block.type !== "BlockStatement")
+        if (node.block == null || node.block.type !== "BlockStatement")
           errors.push(new E(node.block != null ? node.block : node, "TryStatement `block` member must be a BlockStatement node"));
         if (node.finalizer != null && node.finalizer.type !== "BlockStatement")
-          errors.push(new E(node.finalizer != null ? node.finalizer : node, "TryStatement `finalizer` member must be a BlockStatement node"));
+          errors.push(new E(node.finalizer, "TryStatement `finalizer` member must be a BlockStatement node"));
         [].push.apply(errors, concatMap(function(handler) {
           var es = [];
           if (handler == null || handler.type !== "CatchClause")
