@@ -136,7 +136,17 @@ suite("unit", function(){
     invalidStmt(label(ID.name + ID.name, wrapIter({type: "BreakStatement", label: ID})));
   });
 
-  // TODO: CallExpression
+  test("CallExpression", function() {
+    validExpr({type: "CallExpression", callee: EXPR, arguments: []});
+    validExpr({type: "CallExpression", callee: EXPR, arguments: [EXPR]});
+    validExpr({type: "CallExpression", callee: EXPR, arguments: [EXPR, EXPR, EXPR]});
+    invalidExpr({type: "CallExpression"});
+    invalidExpr({type: "CallExpression", callee: EXPR});
+    invalidExpr({type: "CallExpression", arguments: []});
+    invalidExpr({type: "CallExpression", callee: EXPR, arguments: [null]});
+    invalidExpr({type: "CallExpression", callee: EXPR, arguments: [STMT]});
+    invalidExpr({type: "CallExpression", callee: EXPR, arguments: [EXPR, STMT, EXPR]});
+  });
 
   // TODO: CatchClause
 
@@ -356,7 +366,17 @@ suite("unit", function(){
     invalidExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: ""}});
   });
 
-  // TODO: NewExpression
+  test("NewExpression", function() {
+    validExpr({type: "NewExpression", callee: EXPR, arguments: []});
+    validExpr({type: "NewExpression", callee: EXPR, arguments: [EXPR]});
+    validExpr({type: "NewExpression", callee: EXPR, arguments: [EXPR, EXPR, EXPR]});
+    invalidExpr({type: "NewExpression"});
+    invalidExpr({type: "NewExpression", callee: EXPR});
+    invalidExpr({type: "NewExpression", arguments: []});
+    invalidExpr({type: "NewExpression", callee: EXPR, arguments: [null]});
+    invalidExpr({type: "NewExpression", callee: EXPR, arguments: [STMT]});
+    invalidExpr({type: "NewExpression", callee: EXPR, arguments: [EXPR, STMT, EXPR]});
+  });
 
   test("ObjectExpression", function() {
     validExpr({type: "ObjectExpression", properties: []});
