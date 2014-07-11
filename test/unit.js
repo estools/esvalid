@@ -148,7 +148,16 @@ suite("unit", function(){
     invalidExpr({type: "CallExpression", callee: EXPR, arguments: [EXPR, STMT, EXPR]});
   });
 
-  // TODO: CatchClause
+  test("CatchClause", function() {
+    function wrapTry(x) { return {type: "TryStatement", block: BLOCK, handler: x}; }
+    validStmt(wrapTry({type: "CatchClause", param: ID, body: BLOCK}));
+    validStmt(wrapTry({type: "CatchClause", param: EXPR, body: BLOCK}));
+    invalidStmt(wrapTry({type: "CatchClause"}));
+    invalidStmt(wrapTry({type: "CatchClause", param: ID}));
+    invalidStmt(wrapTry({type: "CatchClause", body: BLOCK}));
+    invalidStmt(wrapTry({type: "CatchClause", param: ID, body: {type: "EmptyStatement"}}));
+    invalidStmt(wrapTry({type: "CatchClause", param: STMT, body: BLOCK}));
+  });
 
   test("ConditionalExpression", function() {
     validExpr({type: "ConditionalExpression", test: EXPR, alternate: EXPR, consequent: EXPR});
@@ -292,7 +301,6 @@ suite("unit", function(){
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
-
 
   test("LabeledStatement", function() {
     validStmt({type: "LabeledStatement", label: ID, body: STMT});
@@ -445,7 +453,19 @@ suite("unit", function(){
     validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR]});
   });
 
-  // TODO: SwitchCase
+  test("SwitchCase", function() {
+    function wrapSwitch(x) { return {type: "SwitchStatement", discriminant: EXPR, cases: [x]}; }
+    validStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: []}));
+    validStmt(wrapSwitch({type: "SwitchCase", consequent: []}));
+    validStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: [STMT]}));
+    validStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: [STMT, STMT, STMT]}));
+    invalidStmt(wrapSwitch({type: "SwitchCase"}));
+    invalidStmt(wrapSwitch({type: "SwitchCase", test: EXPR}));
+    invalidStmt(wrapSwitch({type: "SwitchCase", test: STMT, consequent: []}));
+    invalidStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: [null]}));
+    invalidStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: [EXPR]}));
+    invalidStmt(wrapSwitch({type: "SwitchCase", test: EXPR, consequent: [STMT, EXPR, STMT]}));
+  });
 
   test("SwitchStatement", function() {
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
@@ -528,7 +548,16 @@ suite("unit", function(){
     validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
   });
 
-  // TODO: VariableDeclarator
+  test("VariableDeclarator", function() {
+    function wrapVar(x) { return {type: "VariableDeclaration", declarations: [x]}; }
+    validStmt(wrapVar({type: "VariableDeclarator", id: ID, init: EXPR}));
+    validStmt(wrapVar({type: "VariableDeclarator", id: EXPR, init: EXPR}));
+    validStmt(wrapVar({type: "VariableDeclarator", id: ID}));
+    invalidStmt(wrapVar({type: "VariableDeclarator"}));
+    invalidStmt(wrapVar({type: "VariableDeclarator", init: EXPR}));
+    invalidStmt(wrapVar({type: "VariableDeclarator", id: STMT, init: EXPR}));
+    invalidStmt(wrapVar({type: "VariableDeclarator", id: ID, init: STMT}));
+  });
 
   test("WhileStatement", function() {
     validStmt({type: "WhileStatement", test: EXPR, body: STMT});
