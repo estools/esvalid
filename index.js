@@ -1,17 +1,18 @@
 "use strict";
 var esutils = require("esutils");
+var merge = Object.assign || require("object-assign");
 
 // getClass :: Object -> String
 function getClass(obj) {
   return {}.toString.call(obj).slice(8, -1);
 }
 
-// all :: forall a. (a -> Boolean) -> [a] -> Boolean
-function all(xs, predicate) {
+function concatMap(fn, xs) {
+  var result = [];
   for (var i = 0, l = xs.length; i < l; ++i) {
-    if (!predicate(xs[i])) return false;
+    [].push.apply(result, fn(xs[i]));
   }
-  return true;
+  return result;
 }
 
 // filter :: forall a. (a -> Boolean) -> [a] -> [a]
@@ -30,25 +31,11 @@ var isStatement = esutils.ast.isStatement;
 // isSourceElement :: Node -> Boolean
 var isSourceElement = esutils.ast.isSourceElement;
 
-// isValidObjectProperty :: Maybe Node -> (Maybe Node -> Boolean) -> Boolean
-function isValidObjectProperty(node, isValid) {
-  if (!isExpression(node.value) || !isValid(node.value) || ["init", "get", "set"].indexOf(node.kind) < 0)
-    return false;
-  switch (node.key.type) {
-    case "Identifier":
-      return esutils.keyword.isIdentifierName(node.key.name);
-    case "Literal":
-      return ["Number", "String"].indexOf(getClass(node.key.value)) >= 0;
-  }
-  return false;
-}
+var OBJECT_PROPERTY_KINDS = ["init", "get", "set"];
 
 // isProblematicIfStatement :: Node -> Boolean
 function isProblematicIfStatement(node) {
-  return node.type === "IfStatement" && (
-      node.alternate != null && isProblematicIfStatement(node.alternate) ||
-      node.alternate == null && node.consequent != null && (node.consequent.type !== "IfStatement" || isProblematicIfStatement(node.consequent))
-    );
+  return node.type === "IfStatement" && (node.alternate == null || isProblematicIfStatement(node.alternate));
 }
 
 var ASSIGNMENT_OPERATORS = ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "|=", "^=", "&="];
@@ -69,207 +56,648 @@ function isUnaryOperator(op) { return UNARY_OPERATORS.indexOf(op) >= 0; }
 function isUpdateOperator(op) { return UPDATE_OPERATORS.indexOf(op) >= 0; }
 
 
-// isValidPrime :: Node -> [Label] -> Boolean -> Boolean -> Boolean -> Boolean
-function isValidPrime(node, labels, inFunc, inIter, inSwitch) {
-  if (!node.type || node.loc != null &&
-    (node.loc.source != null && typeof node.loc.source != "string" ||
-      node.loc.start == null ||
-      typeof node.loc.start.line != "number" || node.loc.start.line < 1 ||
-      typeof node.loc.start.column != "number" || node.loc.start.column < 0 ||
-      node.loc.end == null ||
-      typeof node.loc.end.line != "number" || node.loc.end.line < 1 ||
-      typeof node.loc.end.column != "number" || node.loc.end.column < 0
-    )) return false;
-
-  var isValid = function(node) {
-    return isValidPrime(node, labels, inFunc, inIter, inSwitch);
-  };
-
-  switch (node.type) {
-
-    case "ArrayExpression":
-      return node.elements != null && all(node.elements, function(element) {
-          return element == null || isExpression(element) && isValid(element);
-        });
-
-    case "AssignmentExpression":
-      return isAssignmentOperator(node.operator) &&
-        isExpression(node.left) && isValid(node.left) &&
-        isExpression(node.right) && isValid(node.right);
-
-    case "BinaryExpression":
-      return isBinaryOperator(node.operator) &&
-        isExpression(node.left) && isValid(node.left) &&
-        isExpression(node.right) && isValid(node.right);
-
-    case "BlockStatement":
-      return node.body != null && all(node.body, function(stmt) { return isStatement(stmt) && isValid(stmt); });
-
-    case "BreakStatement":
-      return (inIter || inSwitch) && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
-
-    case "CatchClause":
-      return isExpression(node.param) && isValid(node.param) &&
-        node.body != null && node.body.type === "BlockStatement" && isValid(node.body);
-
-    case "ConditionalExpression":
-      return isExpression(node.test) && isValid(node.test) &&
-        isExpression(node.alternate) && isValid(node.alternate) &&
-        isExpression(node.consequent) && isValid(node.consequent);
-
-    case "ContinueStatement":
-      return inIter && (node.label == null || node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) >= 0);
-
-    case "DebuggerStatement":
-      return true;
-
-    case "DoWhileStatement":
-      return isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch) &&
-        isExpression(node.test) && isValid(node.test);
-
-    case "EmptyStatement":
-      return true;
-
-    case "ExpressionStatement":
-      return isExpression(node.expression) && isValid(node.expression);
-
-    case "ForInStatement":
-      return (isExpression(node.left) || node.left.type === "VariableDeclaration") && isValid(node.left) &&
-        isExpression(node.right) && isValid(node.right) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
-
-    case "ForStatement":
-      return (node.init == null || (isExpression(node.init) || node.init.type === "VariableDeclaration") && isValid(node.init)) &&
-        (node.test == null || isExpression(node.test) && isValid(node.test)) &&
-        (node.update == null || isExpression(node.update) && isValid(node.update)) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
-
-    case "FunctionDeclaration":
-      return node.id != null && node.id.type === "Identifier" && isValid(node.id) &&
-        node.params != null && all(node.params, function(param){ return isExpression(param) && isValid(param); }) &&
-        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, [], true, inIter, inSwitch);
-
-    case "FunctionExpression":
-      return (node.id == null || node.id.type === "Identifier" && isValid(node.id)) &&
-        node.params != null && all(node.params, function(param){ return isExpression(param) && isValid(param); }) &&
-        node.body != null && node.body.type === "BlockStatement" && isValidPrime({type: "Program", body: node.body.body}, labels, true, inIter, inSwitch);
-
-    case "Identifier":
-      return node.name != null && esutils.keyword.isIdentifierName(node.name) && !esutils.keyword.isReservedWordES6(node.name, true);
-
-    case "IfStatement":
-      return isExpression(node.test) && isValid(node.test) &&
-        isStatement(node.consequent) && isValid(node.consequent) &&
-        (node.alternate == null || isStatement(node.alternate) && isValid(node.alternate)) &&
-        (node.alternate == null || !isProblematicIfStatement(node.consequent));
-
-    case "LabeledStatement":
-      return node.label != null && node.label.type === "Identifier" && isValid(node.label) && labels.indexOf(node.label.name) < 0 &&
-        isStatement(node.body) && isValidPrime(node.body, labels.concat(node.label.name), inFunc, inIter, inSwitch);
-
-    case "Literal":
-      switch (getClass(node.value)) {
-        case "Boolean":
-        case "Null":
-        case "RegExp":
-        case "String":
-          return true;
-        case "Number":
-          return 1 / node.value >= 0 && node.value !== 1 / 0 && node.value !== -1 / 0;
-      }
-      return false;
-
-    case "LogicalExpression":
-      return isLogicalOperator(node.operator) &&
-        isExpression(node.left) && isValid(node.left) &&
-        isExpression(node.right) && isValid(node.right);
-
-    case "MemberExpression":
-      return isExpression(node.object) && isValid(node.object) &&
-        (node.computed && isExpression(node.property) && isValid(node.property) ||
-          !node.computed && node.property != null && node.property.type === "Identifier" && esutils.keyword.isIdentifierName(node.property.name));
-
-    case "CallExpression":
-    case "NewExpression":
-      return isExpression(node.callee) && isValid(node.callee) &&
-        node.arguments != null && all(node.arguments, function(arg) { return isExpression(arg) && isValid(arg); });
-
-    case "ObjectExpression":
-      return node.properties != null && all(node.properties, function(n) { return n != null && isValidObjectProperty(n, isValid); });
-
-    case "Program":
-      return node.body != null && all(node.body, function(stmt){ return isSourceElement(stmt) && isValid(stmt); });
-
-    case "ReturnStatement":
-      return inFunc && (node.argument == null || isExpression(node.argument) && isValid(node.argument));
-
-    case "SequenceExpression":
-      return node.expressions != null && node.expressions.length >= 2 &&
-        all(node.expressions, function(expr) { return isExpression(expr) && isValid(expr); });
-
-    case "SwitchCase":
-      return (node.test == null || isExpression(node.test) && isValid(node.test)) &&
-        node.consequent != null && all(node.consequent, function(stmt) { return isStatement(stmt) && isValidPrime(stmt, labels, inFunc, inIter, true); });
-
-    case "SwitchStatement":
-      return isExpression(node.discriminant) && isValid(node.discriminant) &&
-        node.cases != null && node.cases.length >= 1 &&
-        all(node.cases, function(c) { return c != null && c.type === "SwitchCase" && isValid(c); }) &&
-        filter(node.cases, function(c) { return c.test == null; }).length < 2;
-
-    case "ThisExpression":
-      return true;
-
-    case "ThrowStatement":
-      return isExpression(node.argument) && isValid(node.argument);
-
-    case "TryStatement":
-      // NOTE: TryStatement interface changed from {handlers: [CatchClause]} to {handler: CatchClause}
-      var handlers = node.handlers || (node.handler ? [node.handler] : []);
-      return node.block != null && node.block.type === "BlockStatement" && isValid(node.block) &&
-        (handlers.length === 0 || all(handlers, function(h) { return h != null && h.type === "CatchClause" && isValid(h); })) &&
-        (node.finalizer == null || node.finalizer.type === "BlockStatement" && isValid(node.finalizer)) &&
-        (handlers.length >= 1 || node.finalizer != null);
-
-    case "UnaryExpression":
-      return isUnaryOperator(node.operator) &&
-        isExpression(node.argument) && isValid(node.argument);
-
-    case "UpdateExpression":
-      return isUpdateOperator(node.operator) &&
-        isExpression(node.argument) && isValid(node.argument);
-
-    case "VariableDeclaration":
-      return node.declarations != null && node.declarations.length >= 1 &&
-        all(node.declarations, function(decl) {
-          return decl != null && decl.type === "VariableDeclarator" && isValid(decl);
-        });
-
-    case "VariableDeclarator":
-      return isExpression(node.id) && isValid(node.id) &&
-        (node.init == null || isExpression(node.init) && isValid(node.init));
-
-    case "WhileStatement":
-      return isExpression(node.test) && isValid(node.test) &&
-        isStatement(node.body) && isValidPrime(node.body, labels, inFunc, true, inSwitch);
-
-    case "WithStatement":
-      return isExpression(node.object) && isValid(node.object) &&
-        isStatement(node.body) && isValid(node.body);
+var E, InvalidAstError = E = (function() {
+  function C(){}
+  C.prototype = Error.prototype;
+  function InvalidAstError(node, message) {
+    Error.call(this);
+    this.node = node;
+    this.message = message;
   }
+  InvalidAstError.prototype = new C;
+  InvalidAstError.prototype.constructor = InvalidAstError;
+  InvalidAstError.prototype.name = "InvalidAstError";
+  return InvalidAstError;
+}());
 
-  // istanbul ignore next: unreachable
-  throw new TypeError("Unrecognised node type: " + JSON.stringify(node.type));
+
+// errorsP :: {labels :: [Label], inFunc :: Boolean, inIter :: Boolean, inSwitch :: Boolean} -> Node -> [InvalidAstError]
+function errorsP(state) {
+  return function recurse(node) {
+    var errors = [], line, column;
+
+    if (node.loc != null) {
+      if (node.loc.source != null && typeof node.loc.source !== "string")
+        errors.push(new E(node, "`loc.source` must be a string or null"));
+      if (node.loc.start == null) {
+        errors.push(new E(node, "`loc.start` must be non-null if `loc` is non-null"));
+      } else {
+        line = node.loc.start.line;
+        column = node.loc.start.column;
+        if (typeof line !== "number" || line % 1 !== 0 || line < 1)
+          errors.push(new E(node, "`loc.start.line` must be a positive integer"));
+        if (typeof column !== "number" || column % 1 !== 0 || column < 0)
+          errors.push(new E(node, "`loc.start.column` must be a non-negative integer"));
+      }
+      if (node.loc.end == null) {
+        errors.push(new E(node, "`loc.end` must be non-null if `loc` is non-null"));
+      } else {
+        line = node.loc.end.line;
+        column = node.loc.end.column;
+        if (typeof line !== "number" || line % 1 !== 0 || line < 1)
+          errors.push(new E(node, "`loc.end.line` must be a positive integer"));
+        if (typeof column !== "number" || column % 1 !== 0 || column < 0)
+          errors.push(new E(node, "`loc.end.column` must be a non-negative integer"));
+      }
+    }
+
+    switch (node.type) {
+
+      case "ArrayExpression":
+        if (node.elements == null)
+          errors.push(new E(node, "ArrayExpression `elements` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(element) {
+            if (element == null)
+              return [];
+            else if (!isExpression(element))
+              return [new E(element, "non-null ArrayExpression elements must be expression nodes")];
+            return recurse(element);
+          }, node.elements));
+        break;
+
+      case "AssignmentExpression":
+        if (!isAssignmentOperator(node.operator))
+          errors.push(new E(node, "AssignmentExpression `operator` member must be one of " + JSON.stringify(ASSIGNMENT_OPERATORS)));
+        if (!isExpression(node.left))
+          errors.push(new E(node, "AssignmentExpression `left` member must be an expression node"));
+        if (!isExpression(node.right))
+          errors.push(new E(node, "AssignmentExpression `right` member must be an expression node"));
+        if (node.left != null)
+          [].push.apply(errors, recurse(node.left));
+        if (node.right != null)
+          [].push.apply(errors, recurse(node.right));
+        break;
+
+      case "BinaryExpression":
+        if (!isBinaryOperator(node.operator))
+          errors.push(new E(node, "BinaryExpression `operator` member must be one of " + JSON.stringify(BINARY_OPERATORS)));
+        if (!isExpression(node.left))
+          errors.push(new E(node, "BinaryExpression `left` member must be an expression node"));
+        if (!isExpression(node.right))
+          errors.push(new E(node, "BinaryExpression `right` member must be an expression node"));
+        if (node.left != null)
+          [].push.apply(errors, recurse(node.left));
+        if (node.right != null)
+          [].push.apply(errors, recurse(node.right));
+        break;
+
+      case "BlockStatement":
+        if (node.body == null)
+          errors.push(new E(node, "BlockStatement `body` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(stmt) {
+            var es = [];
+            if (!isStatement(stmt))
+              es.push(new E(stmt != null ? stmt : node, "BlockStatement `body` member must only contain statement nodes"));
+            if (stmt != null)
+              [].push.apply(es, recurse(stmt));
+            return es;
+          }, node.body));
+        break;
+
+      case "BreakStatement":
+        if (!state.inIter && !state.inSwitch)
+          errors.push(new E(node, "BreakStatement must have an IterationStatement or SwitchStatement as an ancestor"));
+        if (node.label != null) {
+          if (node.label.type !== "Identifier")
+            errors.push(new E(node.label, "BreakStatement `label` member must be an Identifier node"));
+          if (state.labels.indexOf(node.label.name) < 0)
+            errors.push(new E(node.label, "labelled BreakStatement must have a matching LabeledStatement ancestor"));
+          [].push.apply(errors, recurse(node.label));
+        }
+        break;
+
+      case "CallExpression":
+        if (!isExpression(node.callee))
+          errors.push(new E(node, "CallExpression `callee` member must be an expression node"));
+        if (node.arguments == null)
+          errors.push(new E(node, "CallExpression `arguments` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(arg) {
+            var es = [];
+            if (!isExpression(arg))
+              es.push(new E(arg != null ? arg : node, "CallExpression `arguments` member must only contain expression nodes"));
+            if (arg != null)
+              [].push.apply(es, recurse(arg));
+            return es;
+          }, node.body));
+        if (node.callee != null)
+          [].push.apply(errors, recurse(node.callee));
+        break;
+
+      case "CatchClause":
+        if (!isExpression(node.param))
+          errors.push(new E(node, "CatchClause `param` member must be an expression node"));
+        if (node.body == null || node.body.type !== "BlockStatement")
+          errors.push(new E(node, "CatchClause `body` member must be a BlockStatement node"));
+        if (node.param != null)
+          [].push.apply(errors, recurse(node.param));
+        if (node.body != null)
+          [].push.apply(errors, recurse(node.body));
+        break;
+
+      case "ConditionalExpression":
+        if (!isExpression(node.test))
+          errors.push(new E(node, "ConditionalExpression `test` member must be an expression node"));
+        if (!isExpression(node.alternate))
+          errors.push(new E(node, "ConditionalExpression `alternate` member must be an expression node"));
+        if (!isExpression(node.consequent))
+          errors.push(new E(node, "ConditionalExpression `consequent` member must be an expression node"));
+        if (node.test != null)
+          [].push.apply(errors, recurse(node.test));
+        if (node.alternate != null)
+          [].push.apply(errors, recurse(node.alternate));
+        if (node.consequent != null)
+          [].push.apply(errors, recurse(node.consequent));
+        break;
+
+      case "ContinueStatement":
+        if (!state.inIter)
+          errors.push(new E(node, "ContinueStatement must have an IterationStatement as an ancestor"));
+        if (node.label != null) {
+          if (node.label.type !== "Identifier")
+            errors.push(new E(node.label, "ContinueStatement `label` member must be an Identifier node"));
+          if (state.labels.indexOf(node.label.name) < 0)
+            errors.push(new E(node.label, "labelled ContinueStatement must have a matching LabeledStatement ancestor"));
+          [].push.apply(errors, recurse(node.label));
+        }
+        break;
+
+      case "DebuggerStatement":
+        break;
+
+      case "DoWhileStatement":
+        if (!isStatement(node.body))
+          errors.push(new E(node, "DoWhileStatement `body` member must be a statement node"));
+        if (!isExpression(node.test))
+          errors.push(new E(node, "DoWhileStatement `test` member must be an expression node"));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inIter: true}))(node.body));
+        if (node.test != null)
+          [].push.apply(errors, recurse(node.test));
+        break;
+
+      case "EmptyStatement":
+        break;
+
+      case "ExpressionStatement":
+        if (!isExpression(node.expression))
+          errors.push(new E(node, "ExpressionStatement `expression` member must be an expression node"));
+        if (node.expression != null)
+          [].push.apply(errors, recurse(node.expression));
+        break;
+
+      case "ForInStatement":
+        if (node.left == null || !isExpression(node.left) && node.left.type !== "VariableDeclaration")
+          errors.push(new E(node, "ForInStatement `left` member must be an expression or VariableDeclaration node"));
+        if (!isExpression(node.right))
+          errors.push(new E(node, "ForInStatement `right` member must be an expression node"));
+        if (!isStatement(node.body))
+          errors.push(new E(node, "ForInStatement `body` member must be a statement node"));
+        if (node.left != null)
+          [].push.apply(errors, recurse(node.left));
+        if (node.right != null)
+          [].push.apply(errors, recurse(node.right));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inIter: true}))(node.body));
+        break;
+
+      case "ForStatement":
+        if (node.init == null || !isExpression(node.init) && node.init.type !== "VariableDeclaration")
+          errors.push(new E(node, "ForStatement `init` member must be an expression or VariableDeclaration node"));
+        if (!isExpression(node.test))
+          errors.push(new E(node, "ForStatement `test` member must be an expression node"));
+        if (!isExpression(node.update))
+          errors.push(new E(node, "ForStatement `update` member must be an expression node"));
+        if (!isStatement(node.body))
+          errors.push(new E(node, "ForStatement `body` member must be a statement node"));
+        if (node.init != null)
+          [].push.apply(errors, recurse(node.init));
+        if (node.test != null)
+          [].push.apply(errors, recurse(node.test));
+        if (node.update != null)
+          [].push.apply(errors, recurse(node.update));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inIter: true}))(node.body));
+        break;
+
+      case "FunctionDeclaration":
+        if (node.id == null || node.id.type !== "Identifier")
+          errors.push(new E(node, "FunctionDeclaration `id` member must be an Identifier node"));
+        if (node.params == null)
+          errors.push(new E(node, "FunctionDeclaration `params` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(param) {
+            if (param == null)
+              return [new E(node, "FunctionDeclaration `params` member must not contain null values")];
+            else if (!isExpression(param))
+              return [new E(param, "FunctionDeclaration params must be expression nodes")];
+            return recurse(param);
+          }, node.params));
+        if (node.body == null || node.body.type !== "BlockStatement")
+          errors.push(new E(node, "FunctionDeclaration `body` member must be an BlockStatement node"));
+        if (node.id != null)
+          [].push.apply(errors, recurse(node.id));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inFunc: true}))({type: "Program", body: node.body.body}));
+        break;
+
+      case "FunctionExpression":
+        if (node.id != null && node.id.type !== "Identifier")
+          errors.push(new E(node, "FunctionExpression `id` member must be an Identifier node or null"));
+        if (node.params == null)
+          errors.push(new E(node, "FunctionExpression `params` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(param) {
+            if (param == null)
+              return [new E(node, "FunctionExpression `params` member must not contain null values")];
+            else if (!isExpression(param))
+              return [new E(param, "FunctionExpression params must be expression nodes")];
+            return recurse(param);
+          }, node.params));
+        if (node.body == null || node.body.type !== "BlockStatement")
+          errors.push(new E(node, "FunctionExpression `body` member must be an BlockStatement node"));
+        if (node.id != null)
+          [].push.apply(errors, recurse(node.id));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inFunc: true}))({type: "Program", body: node.body.body}));
+        break;
+
+      case "Identifier":
+        if (node.name == null)
+          errors.push(new E(node, "Identifier `name` member must not be null"));
+        else if (!esutils.keyword.isIdentifierName(node.name))
+          errors.push(new E(node, "Identifier `name` member must a valid IdentifierName"));
+        else if (esutils.keyword.isReservedWordES6(node.name, true))
+          errors.push(new E(node, "Identifier `name` member must not be a ReservedWord"));
+        break;
+
+      case "IfStatement":
+        if (!isExpression(node.test))
+          errors.push(new E(node, "IfStatement `test` member must be an expression node"));
+        if (!isStatement(node.consequent))
+          errors.push(new E(node, "IfStatement `consequent` member must be a statement node"));
+        if (node.alternate != null && !isStatement(node.alternate))
+          errors.push(new E(node, "IfStatement `alternate` member must be a statement node or null"));
+        if (node.alternate != null && node.consequent != null && isProblematicIfStatement(node.consequent))
+          errors.push(new E(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
+        if (node.test != null)
+          [].push.apply(errors, recurse(node.test));
+        if (node.consequent != null)
+          [].push.apply(errors, recurse(node.consequent));
+        if (node.alternate != null)
+          [].push.apply(errors, recurse(node.alternate));
+        break;
+
+      case "LabeledStatement":
+        if (node.label == null || node.label.type !== "Identifier")
+          errors.push(new E(node, "LabeledStatement `label` member must be an Identifier node"));
+        if (!isStatement(node.body))
+          errors.push(new E(node, "LabeledStatement `body` member must be a statement node"));
+        if (node.label != null) {
+          if (state.labels.indexOf(node.label.name) >= 0)
+            errors.push(new E(node, "LabeledStatement must not be nested within a LabeledStatement with the same label"));
+          [].push.apply(errors, recurse(node.label));
+          if (node.body != null)
+            [].push.apply(errors, errorsP(merge({}, state, {labels: state.labels.concat(node.label.name)}))(node.body));
+        } else if (node.body != null) {
+            [].push.apply(errors, recurse(node.body));
+        }
+        break;
+
+      case "Literal":
+        switch (getClass(node.value)) {
+          case "Boolean":
+          case "Null":
+          case "RegExp":
+          case "String":
+            break;
+          case "Number":
+            if (node.value !== node.value)
+              errors.push(new E(node, "numeric Literal nodes must not be NaN"));
+            else if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
+              errors.push(new E(node, "numeric Literal nodes must not be negative"));
+            if (!isFinite(node.value))
+              errors.push(new E(node, "numeric Literal nodes must be finite"));
+            break;
+          default:
+            errors.push(new E(node, "Literal nodes must have a boolean, null, regexp, string, or number as the `value` member"));
+        }
+        break;
+
+      case "LogicalExpression":
+        if (!isLogicalOperator(node.operator))
+          errors.push(new E(node, "LogicalExpression `operator` member must be one of " + JSON.stringify(LOGICAL_OPERATORS)));
+        if (!isExpression(node.left))
+          errors.push(new E(node, "LogicalExpression `left` member must be an expression node"));
+        if (!isExpression(node.right))
+          errors.push(new E(node, "LogicalExpression `right` member must be an expression node"));
+        if (node.left != null)
+          [].push.apply(errors, recurse(node.left));
+        if (node.right != null)
+          [].push.apply(errors, recurse(node.right));
+        break;
+
+      case "MemberExpression":
+        if (!isExpression(node.object))
+          errors.push(new E(node, "MemberExpression `object` member must be an expression node"));
+        if (node.computed) {
+          if (!isExpression(node.property))
+            errors.push(new E(node, "computed MemberExpression `property` member must be an expression node"));
+          if (node.property != null)
+            [].push.apply(errors, recurse(node.property));
+        } else if (node.property == null || node.property.type !== "Identifier") {
+            errors.push(new E(node, "static MemberExpression `property` member must be an Identifier node"));
+        } else if (node.property.name == null || !esutils.keyword.isIdentifierName(node.property.name)) {
+            errors.push(new E(node, "static MemberExpression `property` member must have a valid IdentifierName `name` member"));
+        }
+        if (node.object != null)
+          [].push.apply(errors, recurse(node.object));
+        break;
+
+      case "NewExpression":
+        if (!isExpression(node.callee))
+          errors.push(new E(node, "NewExpression `callee` member must be an expression node"));
+        if (node.arguments == null)
+          errors.push(new E(node, "NewExpression `arguments` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(arg) {
+            var es = [];
+            if (!isExpression(arg))
+              es.push(new E(arg != null ? arg : node, "NewExpression `arguments` member must only contain expression nodes"));
+            if (arg != null)
+              [].push.apply(es, recurse(arg));
+            return es;
+          }, node.body));
+        if (node.callee != null)
+          [].push.apply(errors, recurse(node.callee));
+        break;
+
+      case "ObjectExpression":
+        if (node.properties == null)
+          errors.push(new E(node, "ObjectExpression `properties` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(property) {
+            var es = [];
+            if (property == null)
+              return [new E(node, "ObjectExpression `properties` must not contain null values")];
+            if (!isExpression(property.value))
+              es.push(new E(property, "ObjectExpression property `value` member must be an expression node"));
+            if (property.value != null)
+              [].push.apply(es, recurse(property.value));
+            if (OBJECT_PROPERTY_KINDS.indexOf(property.kind) < 0)
+              es.push(new E(property, "ObjectExpression property `kind` member must be one of " + JSON.stringify(OBJECT_PROPERTY_KINDS)));
+            if (property.key == null)
+              es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
+            else
+              switch (property.key.type) {
+                case "Identifier":
+                  if (!esutils.keyword.isIdentifierName(property.key.name))
+                    es.push(new E(property, "ObjectExpression property `key` members of type Identifier must be an IdentifierName"));
+                  break;
+                case "Literal":
+                  if (["Number", "String"].indexOf(getClass(property.key.value)) < 0)
+                    es.push(new E(property, "ObjectExpression property `key` members of type Literal must have either a number or string `value` member"));
+                  else
+                    [].push.apply(es, recurse(property.key));
+                  break;
+                 default:
+                  es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
+              }
+            return es;
+          }, node.properties));
+        break;
+
+      case "Program":
+        if (node.body == null)
+          errors.push(new E(node, "Program `body` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(sourceElement) {
+            var es = [];
+            if (!isSourceElement(sourceElement))
+              es.push(new E(sourceElement != null ? sourceElement : node, "Program `body` member must only contain statement or function declaration nodes"));
+            if (sourceElement != null)
+              [].push.apply(es, recurse(sourceElement));
+            return es;
+          }, node.body));
+        break;
+
+      case "ReturnStatement":
+        if (!state.inFunc)
+          errors.push(new E(node, "ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node"));
+        if (node.argument != null) {
+          if (!isExpression(node.argument))
+            errors.push(new E(node, "ReturnStatement `argument` member must be an expression node or null"));
+          [].push.apply(errors, recurse(node.argument));
+        }
+        break;
+
+      case "SequenceExpression":
+        if (node.expressions == null) {
+          errors.push(new E(node, "SequenceExpression `expressions` member must be non-null"));
+        } else {
+          if (node.expressions.length < 2)
+            errors.push(new E(node, "SequenceExpression `expressions` member length must be >= 2"));
+          [].push.apply(errors, concatMap(function(expr) {
+            var es = [];
+            if (!isExpression(expr))
+              es.push(new E(expr != null ? expr : node, "SequenceExpression `expressions` member must only contain expression nodes"));
+            if (expr != null)
+              [].push.apply(es, recurse(expr));
+            return es;
+          }, node.expressions));
+        }
+        break;
+
+      case "SwitchCase":
+        if (node.test != null) {
+          if (!isExpression(node.test))
+            errors.push(new E(node, "SwitchCase `test` member must be an expression node or null"));
+          [].push.apply(errors, recurse(node.test));
+        }
+        if (node.consequent == null)
+          errors.push(new E(node, "SwitchCase `consequent` member must be non-null"));
+        else
+          [].push.apply(errors, concatMap(function(stmt) {
+            var es = [];
+            if (!isStatement(stmt))
+              es.push(new E(stmt != null ? stmt : node, "SwitchCase `consequent` member must only contain statement nodes"));
+            if (stmt != null)
+              [].push.apply(es, errorsP(merge({}, state, {inSwitch: true}))(stmt));
+            return es;
+          }, node.consequent));
+        break;
+
+      case "SwitchStatement":
+        if (!isExpression(node.discriminant))
+          errors.push(new E(node, "SwitchStatement `discriminant` member must be an expression node"));
+        if (node.cases == null) {
+          errors.push(new E(node, "SwitchStatement `cases` member must be non-null"));
+        } else {
+          if (node.cases.length < 1)
+            errors.push(new E(node, "SwitchStatement `cases` member length must be >= 2"));
+          [].push.apply(errors, concatMap(function(switchCase) {
+            var es = [];
+            if (switchCase == null || switchCase.type !== "SwitchCase")
+              es.push(new E(switchCase != null ? switchCase : node, "SwitchStatement `cases` member must only contain SwitchCase nodes"));
+            if (switchCase != null)
+              [].push.apply(es, recurse(switchCase));
+            return es;
+          }, node.cases));
+          if (filter(node.cases, function(c) { return c != null && c.test == null; }).length > 1)
+            errors.push(new E(node, "SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member"));
+        }
+        if (node.discriminant != null)
+          [].push.apply(errors, recurse(node.discriminant));
+        break;
+
+      case "ThisExpression":
+        break;
+
+      case "ThrowStatement":
+        if (!isExpression(node.argument))
+          errors.push(new E(node, "ThrowStatement `argument` member must be an expression node"));
+        if (node.argument != null)
+          [].push.apply(errors, recurse(node.argument));
+        break;
+
+      case "TryStatement":
+        // NOTE: TryStatement interface changed from {handlers: [CatchClause]} to {handler: CatchClause}; we support both
+        var handlers = node.handlers || (node.handler ? [node.handler] : []);
+        if (node.block != null && node.block.type !== "BlockStatement")
+          errors.push(new E(node.block != null ? node.block : node, "TryStatement `block` member must be a BlockStatement node"));
+        if (node.finalizer != null && node.finalizer.type !== "BlockStatement")
+          errors.push(new E(node.finalizer != null ? node.finalizer : node, "TryStatement `finalizer` member must be a BlockStatement node"));
+        [].push.apply(errors, concatMap(function(handler) {
+          var es = [];
+          if (handler == null || handler.type !== "CatchClause")
+            es.push(new E(handler != null ? handler : node, "TryStatement `handler` member must be a CatchClause node"));
+          if (handler != null)
+            [].push.apply(es, recurse(handler));
+          return es;
+        }, handlers));
+        if (node.block != null)
+          [].push.apply(errors, recurse(node.block));
+        if (node.finalizer != null)
+          [].push.apply(errors, recurse(node.finalizer));
+        if (handlers.length < 1 && node.finalizer == null)
+            errors.push(new E(node, "TryStatement must have a non-null `handler` member or a non-null `finalizer` member"));
+        break;
+
+      case "UnaryExpression":
+        if (!isUnaryOperator(node.operator))
+          errors.push(new E(node, "UnaryExpression `operator` member must be one of " + JSON.stringify(UNARY_OPERATORS)));
+        if (!isExpression(node.argument))
+          errors.push(new E(node, "UnaryExpression `argument` member must be an expression node"));
+        if (node.argument != null)
+          [].push.apply(errors, recurse(node.argument));
+        break;
+
+      case "UpdateExpression":
+        if (!isUpdateOperator(node.operator))
+          errors.push(new E(node, "UpdateExpression `operator` member must be one of " + JSON.stringify(UNARY_OPERATORS)));
+        if (!isExpression(node.argument))
+          errors.push(new E(node, "UpdateExpression `argument` member must be an expression node"));
+        if (node.argument != null)
+          [].push.apply(errors, recurse(node.argument));
+        break;
+
+      case "VariableDeclaration":
+        if (node.declarations == null) {
+          errors.push(new E(node, "VariableDeclaration `declarations` member must be non-null"));
+        } else {
+          if (node.declarations.length < 1)
+            errors.push(new E(node, "VariableDeclaration `declarations` member must be non-empty"));
+          [].push.apply(errors, concatMap(function(decl) {
+            var es = [];
+            if (decl == null || decl.type !== "VariableDeclarator")
+              es.push(new E(decl != null ? decl : node, "VariableDeclaration `declarations` member must contain only VariableDeclarator nodes"));
+            if (decl != null)
+              [].push.apply(es, recurse(decl));
+            return es;
+          }, node.declarations));
+        }
+        break;
+
+      case "VariableDeclarator":
+        if (!isExpression(node.id))
+          errors.push(new E(node, "VariableDeclarator `id` member must be an expression node"));
+        if (node.init != null) {
+          if (!isExpression(node.init))
+            errors.push(new E(node, "VariableDeclarator `init` member must be an expression node or null"));
+          [].push.apply(errors, recurse(node.init));
+        }
+        if (node.id != null)
+          [].push.apply(errors, recurse(node.id));
+        break;
+
+      case "WhileStatement":
+        if (!isExpression(node.test))
+          errors.push(new E(node, "WhileStatement `test` member must be an expression node"));
+        if (!isStatement(node.body))
+          errors.push(new E(node, "WhileStatement `body` member must be a statement node"));
+        if (node.test != null)
+          [].push.apply(errors, recurse(node.test));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inIter: true}))(node.body));
+        break;
+
+      case "WithStatement":
+        if (!isExpression(node.object))
+          errors.push(new E(node, "WithStatement `object` member must be an expression node"));
+        if (!isStatement(node.body))
+          errors.push(new E(node, "WithStatement `body` member must be a statement node"));
+        if (node.object != null)
+          [].push.apply(errors, recurse(node.object));
+        if (node.body != null)
+          [].push.apply(errors, errorsP(merge({}, state, {inIter: true}))(node.body));
+        break;
+
+      default:
+        switch (getClass(node.type)) {
+        case "String":
+          errors.push(new E(node, "unrecognised node type: " + JSON.stringify(node.type)));
+          break;
+        case "Null":
+        case "Undefined":
+          errors.push(new E(node, "all AST nodes must have a `type` member"));
+          break;
+        default:
+          errors.push(new E(node, "AST node `type` must be a string"));
+        }
+    }
+
+    return errors;
+  };
 }
 
+var START_STATE = {labels: [], inFunc: false, inIter: false, inSwitch: false};
+
 module.exports = {
+
   // isValid :: Maybe Node -> Boolean
   isValid: function isValid(node) {
-    if (node == null || node.type !== "Program") return false;
-    return isValidPrime(node, [], false, false, false);
+    return node != null && node.type === "Program" &&
+      errorsP(START_STATE)(node).length < 1;
   },
+
   // isValidExpression :: Maybe Node -> Boolean
   isValidExpression: function isValidExpression(node) {
-    return isExpression(node) && isValidPrime(node, [], false, false, false);
+    return isExpression(node) && errorsP(START_STATE)(node).length < 1;
+  },
+
+  // errors :: Maybe Node -> [InvalidAstError]
+  errors: function errors(node) {
+    var errors = [];
+    if (node == null) {
+      errors.push(new E(node, "given AST node should be non-null"));
+    } else {
+      if (node.type !== "Program")
+        errors.push(new E(node, "given AST node should be of type Program"));
+      [].push.apply(errors, errorsP(START_STATE)(node));
+    }
+    return errors;
   }
+
 };
