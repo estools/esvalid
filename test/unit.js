@@ -178,7 +178,14 @@ suite("unit", function(){
     validStmt({type: "DebuggerStatement"});
   });
 
-  // TODO: DoWhileStatement
+  test("DoWhileStatement", function() {
+    validStmt({type: "DoWhileStatement", body: STMT, test: EXPR});
+    invalidStmt({type: "DoWhileStatement"});
+    invalidStmt({type: "DoWhileStatement", body: STMT});
+    invalidStmt({type: "DoWhileStatement", test: EXPR});
+    invalidStmt({type: "DoWhileStatement", body: EXPR, test: EXPR});
+    invalidStmt({type: "DoWhileStatement", body: STMT, test: STMT});
+  });
 
   test("EmptyStatement", function() {
     validStmt({type: "EmptyStatement"});
@@ -521,7 +528,14 @@ suite("unit", function(){
 
   // TODO: VariableDeclarator
 
-  // TODO: WhileStatement
+  test("WhileStatement", function() {
+    validStmt({type: "WhileStatement", test: EXPR, body: STMT});
+    invalidStmt({type: "WhileStatement"});
+    invalidStmt({type: "WhileStatement", test: EXPR});
+    invalidStmt({type: "WhileStatement", body: STMT});
+    invalidStmt({type: "WhileStatement", test: EXPR, body: EXPR});
+    invalidStmt({type: "WhileStatement", test: STMT, body: STMT});
+  });
 
   test("WithStatement", function() {
     validStmt({type: "WithStatement", object: EXPR, body: STMT});
