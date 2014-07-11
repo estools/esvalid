@@ -687,6 +687,9 @@ module.exports = {
     return isExpression(node) && errorsP(START_STATE)(node).length < 1;
   },
 
+  // InvalidAstError :: Node -> String -> InvalidAstError
+  InvalidAstError: InvalidAstError,
+
   // errors :: Maybe Node -> [InvalidAstError]
   errors: function errors(node) {
     var errors = [];
