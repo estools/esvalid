@@ -26,9 +26,15 @@ function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifi
 
 
 function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
-function invalidStmt(x, msg) { assert.ok(!esvalid.isValid(wrapProgram(x)), msg); }
+function invalidStmt(x, msg) {
+  assert.ok(!esvalid.isValid(wrapProgram(x)), msg);
+  esvalid.errors(wrapProgram(x)).forEach(function(e) { assert.notEqual(e.node, null, msg); });
+}
 function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
-function invalidExpr(x, msg) { assert.ok(!esvalid.isValidExpression(x), msg); }
+function invalidExpr(x, msg) {
+  assert.ok(!esvalid.isValidExpression(x), msg);
+  esvalid.errors(wrapProgram({type: "ExpressionStatement", expression: x})).forEach(function(e) { assert.notEqual(e.node, null, msg); });
+}
 
 
 suite("unit", function(){
@@ -36,6 +42,7 @@ suite("unit", function(){
   test("non-nodes", function() {
     function invalid(x, msg) {
       assert.ok(!esvalid.isValid(x), msg);
+      assert.notEqual(esvalid.errors(x), 0, msg);
       invalidStmt(x, msg);
       invalidExpr(x, msg);
     }
