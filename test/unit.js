@@ -181,9 +181,41 @@ suite("unit", function(){
     invalidStmt({type: "ExpressionStatement", expression: FD(STMT)});
   });
 
-  // TODO: ForInStatement
+  test("ForInStatement", function() {
+    validStmt({type: "ForInStatement", left: EXPR, right: EXPR, body: STMT});
+    validStmt({type: "ForInStatement", left: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, right: EXPR, body: STMT});
+    invalidStmt({type: "ForInStatement"});
+    invalidStmt({type: "ForInStatement", left: EXPR});
+    invalidStmt({type: "ForInStatement", right: EXPR});
+    invalidStmt({type: "ForInStatement", left: EXPR, right: EXPR});
+    invalidStmt({type: "ForInStatement", left: EXPR, body: STMT});
+    invalidStmt({type: "ForInStatement", right: EXPR, body: STMT});
+    invalidStmt({type: "ForInStatement", left: EXPR, right: EXPR, body: EXPR});
+    invalidStmt({type: "ForInStatement", left: STMT, right: EXPR, body: STMT});
+    invalidStmt({type: "ForInStatement", left: EXPR, right: STMT, body: STMT});
+  });
 
-  // TODO: ForStatement
+  test("ForStatement", function() {
+    validStmt({type: "ForStatement", init: EXPR, test: EXPR, update: EXPR, body: STMT});
+    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, test: EXPR, update: EXPR, body: STMT});
+    validStmt({type: "ForStatement", init: EXPR, body: STMT});
+    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, body: STMT});
+    validStmt({type: "ForStatement", test: EXPR, body: STMT});
+    validStmt({type: "ForStatement", update: EXPR, body: STMT});
+    validStmt({type: "ForStatement", body: STMT});
+    invalidStmt({type: "ForStatement"});
+    invalidStmt({type: "ForStatement", init: EXPR});
+    invalidStmt({type: "ForStatement", test: EXPR});
+    invalidStmt({type: "ForStatement", update: EXPR});
+    invalidStmt({type: "ForStatement", init: EXPR, test: EXPR});
+    invalidStmt({type: "ForStatement", test: EXPR, update: EXPR});
+    invalidStmt({type: "ForStatement", init: EXPR, update: EXPR});
+    invalidStmt({type: "ForStatement", init: EXPR, test: EXPR, update: EXPR});
+    invalidStmt({type: "ForStatement", body: EXPR});
+    invalidStmt({type: "ForStatement", init: STMT, body: STMT});
+    invalidStmt({type: "ForStatement", test: STMT, body: STMT});
+    invalidStmt({type: "ForStatement", update: STMT, body: STMT});
+  });
 
   test("FunctionDeclaration", function() {
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: BLOCK});

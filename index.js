@@ -265,7 +265,7 @@ function errorsP(state) {
 
       case "ForStatement":
         if (node.init != null && !isExpression(node.init) && node.init.type !== "VariableDeclaration")
-          errors.push(new E(node, "ForStatement `init` member must be an expression or VariableDeclaration node"));
+          errors.push(new E(node, "ForStatement `init` member must be an expression or VariableDeclaration node or null"));
         if (node.test != null && !isExpression(node.test))
           errors.push(new E(node.test, "ForStatement `test` member must be an expression node or null"));
         if (node.update != null && !isExpression(node.update))
