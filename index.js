@@ -181,7 +181,7 @@ function errorsP(state) {
             if (arg != null)
               [].push.apply(es, recurse(arg));
             return es;
-          }, node.body));
+          }, node.arguments));
         if (node.callee != null)
           [].push.apply(errors, recurse(node.callee));
         break;
@@ -264,12 +264,12 @@ function errorsP(state) {
         break;
 
       case "ForStatement":
-        if (node.init == null || !isExpression(node.init) && node.init.type !== "VariableDeclaration")
+        if (node.init != null && !isExpression(node.init) && node.init.type !== "VariableDeclaration")
           errors.push(new E(node, "ForStatement `init` member must be an expression or VariableDeclaration node"));
-        if (!isExpression(node.test))
-          errors.push(new E(node, "ForStatement `test` member must be an expression node"));
-        if (!isExpression(node.update))
-          errors.push(new E(node, "ForStatement `update` member must be an expression node"));
+        if (node.test != null && !isExpression(node.test))
+          errors.push(new E(node.test, "ForStatement `test` member must be an expression node or null"));
+        if (node.update != null && !isExpression(node.update))
+          errors.push(new E(node, "ForStatement `update` member must be an expression node or null"));
         if (!isStatement(node.body))
           errors.push(new E(node, "ForStatement `body` member must be a statement node"));
         if (node.init != null)
@@ -429,7 +429,7 @@ function errorsP(state) {
             if (arg != null)
               [].push.apply(es, recurse(arg));
             return es;
-          }, node.body));
+          }, node.arguments));
         if (node.callee != null)
           [].push.apply(errors, recurse(node.callee));
         break;
