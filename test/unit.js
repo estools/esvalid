@@ -395,7 +395,9 @@ suite("unit", function(){
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
     invalidExpr({type: "ObjectExpression"});
     invalidExpr({type: "ObjectExpression", properties: [null]});
+    invalidExpr({type: "ObjectExpression", properties: [{}]});
     invalidExpr({type: "ObjectExpression", properties: [{key: ID, value: EXPR}]});
+    invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: ID}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "-", key: ID, value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", value: EXPR}]});
     invalidExpr({type: "ObjectExpression", properties: [{kind: "init", key: STMT, value: EXPR}]});
