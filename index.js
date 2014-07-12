@@ -33,11 +33,6 @@ var isSourceElement = esutils.ast.isSourceElement;
 
 var OBJECT_PROPERTY_KINDS = ["init", "get", "set"];
 
-// isProblematicIfStatement :: Node -> Boolean
-function isProblematicIfStatement(node) {
-  return node.type === "IfStatement" && (node.alternate == null || isProblematicIfStatement(node.alternate));
-}
-
 var ASSIGNMENT_OPERATORS = ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "|=", "^=", "&="];
 var BINARY_OPERATORS = ["==", "!=", "===", "!==", "<", "<=", ">", ">=", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "|", "^", "&", "in", "instanceof"];
 var LOGICAL_OPERATORS = ["||", "&&"];
@@ -340,7 +335,8 @@ function errorsP(state) {
           errors.push(new E(node, "IfStatement `consequent` member must be a statement node"));
         if (node.alternate != null && !isStatement(node.alternate))
           errors.push(new E(node, "IfStatement `alternate` member must be a statement node or null"));
-        if (node.alternate != null && node.consequent != null && isProblematicIfStatement(node.consequent))
+        if (node.alternate != null && node.consequent != null && esutils.ast.isProblematicIfStatement(node))
+
           errors.push(new E(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
         if (node.test != null)
           [].push.apply(errors, recurse(node.test));

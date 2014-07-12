@@ -291,6 +291,7 @@ suite("unit", function(){
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: STMT, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: STMT});
+    validStmt({type: "IfStatement", test: EXPR, consequent: {type: "DoWhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt({type: "IfStatement"});
     invalidStmt({type: "IfStatement", test: EXPR});
     invalidStmt({type: "IfStatement", test: STMT, consequent: STMT});
@@ -300,6 +301,11 @@ suite("unit", function(){
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "LabeledStatement", label: ID, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "WhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "WithStatement", object: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "ForStatement", init: EXPR, test: EXPR, update: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt({type: "IfStatement", test: EXPR, consequent: {type: "ForInStatement", left: EXPR, right: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
 
   test("LabeledStatement", function() {
