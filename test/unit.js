@@ -209,7 +209,7 @@ suite("unit", function(){
 
   test("ForInStatement", function() {
     validStmt({type: "ForInStatement", left: EXPR, right: EXPR, body: STMT});
-    validStmt({type: "ForInStatement", left: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, right: EXPR, body: STMT});
+    validStmt({type: "ForInStatement", left: {type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]}, right: EXPR, body: STMT});
     invalidStmt({type: "ForInStatement"});
     invalidStmt({type: "ForInStatement", left: EXPR});
     invalidStmt({type: "ForInStatement", right: EXPR});
@@ -223,9 +223,9 @@ suite("unit", function(){
 
   test("ForStatement", function() {
     validStmt({type: "ForStatement", init: EXPR, test: EXPR, update: EXPR, body: STMT});
-    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, test: EXPR, update: EXPR, body: STMT});
+    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]}, test: EXPR, update: EXPR, body: STMT});
     validStmt({type: "ForStatement", init: EXPR, body: STMT});
-    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]}, body: STMT});
+    validStmt({type: "ForStatement", init: {type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]}, body: STMT});
     validStmt({type: "ForStatement", test: EXPR, body: STMT});
     validStmt({type: "ForStatement", update: EXPR, body: STMT});
     validStmt({type: "ForStatement", body: STMT});
@@ -546,16 +546,21 @@ suite("unit", function(){
   test("VariableDeclaration", function() {
     invalidStmt({type: "VariableDeclaration"});
     invalidStmt({type: "VariableDeclaration", declarations: null});
-    invalidStmt({type: "VariableDeclaration", declarations: []});
-    invalidStmt({type: "VariableDeclaration", declarations: [null]});
-    invalidStmt({type: "VariableDeclaration", declarations: [ID]});
-    validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
-    validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
-    validStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
+    invalidStmt({type: "VariableDeclaration", kind: "var", declarations: null});
+    invalidStmt({type: "VariableDeclaration", kind: "var", declarations: []});
+    invalidStmt({type: "VariableDeclaration", kind: "var", declarations: [null]});
+    invalidStmt({type: "VariableDeclaration", kind: "var", declarations: [ID]});
+    invalidStmt({type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
+    invalidStmt({type: "VariableDeclaration", kind: "ng", declarations: [{type: "VariableDeclarator", id: ID}]});
+    validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]});
+    validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
+    validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
+    validStmt({type: "VariableDeclaration", kind: "let", declarations: [{type: "VariableDeclarator", id: ID}]});
+    validStmt({type: "VariableDeclaration", kind: "const", declarations: [{type: "VariableDeclarator", id: ID}]});
   });
 
   test("VariableDeclarator", function() {
-    function wrapVar(x) { return {type: "VariableDeclaration", declarations: [x]}; }
+    function wrapVar(x) { return {type: "VariableDeclaration", kind: "var", declarations: [x]}; }
     validStmt(wrapVar({type: "VariableDeclarator", id: ID, init: EXPR}));
     validStmt(wrapVar({type: "VariableDeclarator", id: EXPR, init: EXPR}));
     validStmt(wrapVar({type: "VariableDeclarator", id: ID}));

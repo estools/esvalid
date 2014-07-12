@@ -39,6 +39,8 @@ var LOGICAL_OPERATORS = ["||", "&&"];
 var UNARY_OPERATORS = ["-", "+", "!", "~", "typeof", "void", "delete"];
 var UPDATE_OPERATORS = ["++", "--"];
 
+var VARIABLE_DECLARATION_KINDS = ["var", "let", "const"];
+
 // isAssignmentOperator :: String -> Boolean
 function isAssignmentOperator(op) { return ASSIGNMENT_OPERATORS.indexOf(op) >= 0; }
 // isBinaryOperator :: String -> Boolean
@@ -605,6 +607,8 @@ function errorsP(state) {
         } else {
           if (node.declarations.length < 1)
             errors.push(new E(node, "VariableDeclaration `declarations` member must be non-empty"));
+          if (VARIABLE_DECLARATION_KINDS.indexOf(node.kind) < 0)
+            errors.push(new E(node, "VariableDeclaration `kind` member must be one of " + JSON.stringify(VARIABLE_DECLARATION_KINDS)));
           [].push.apply(errors, concatMap(function(decl) {
             var es = [];
             if (decl == null || decl.type !== "VariableDeclarator")
