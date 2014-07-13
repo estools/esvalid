@@ -32,14 +32,13 @@ var isStatement = esutils.ast.isStatement;
 var isSourceElement = esutils.ast.isSourceElement;
 
 var OBJECT_PROPERTY_KINDS = ["init", "get", "set"];
+var VARIABLE_DECLARATION_KINDS = ["var", "let", "const"];
 
 var ASSIGNMENT_OPERATORS = ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "|=", "^=", "&="];
 var BINARY_OPERATORS = ["==", "!=", "===", "!==", "<", "<=", ">", ">=", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "|", "^", "&", "in", "instanceof"];
 var LOGICAL_OPERATORS = ["||", "&&"];
 var UNARY_OPERATORS = ["-", "+", "!", "~", "typeof", "void", "delete"];
 var UPDATE_OPERATORS = ["++", "--"];
-
-var VARIABLE_DECLARATION_KINDS = ["var", "let", "const"];
 
 // isAssignmentOperator :: String -> Boolean
 function isAssignmentOperator(op) { return ASSIGNMENT_OPERATORS.indexOf(op) >= 0; }
@@ -159,7 +158,7 @@ function errorsP(state) {
         if (node.label != null) {
           if (node.label.type !== "Identifier")
             errors.push(new E(node.label, "BreakStatement `label` member must be an Identifier node"));
-          if (state.labels.indexOf(node.label.name) < 0)
+          else if (state.labels.indexOf(node.label.name) < 0)
             errors.push(new E(node.label, "labelled BreakStatement must have a matching LabeledStatement ancestor"));
           [].push.apply(errors, recurse(node.label));
         }
@@ -215,7 +214,7 @@ function errorsP(state) {
         if (node.label != null) {
           if (node.label.type !== "Identifier")
             errors.push(new E(node.label, "ContinueStatement `label` member must be an Identifier node"));
-          if (state.labels.indexOf(node.label.name) < 0)
+          else if (state.labels.indexOf(node.label.name) < 0)
             errors.push(new E(node.label, "labelled ContinueStatement must have a matching LabeledStatement ancestor"));
           [].push.apply(errors, recurse(node.label));
         }
@@ -349,18 +348,22 @@ function errorsP(state) {
         break;
 
       case "LabeledStatement":
-        if (node.label == null || node.label.type !== "Identifier")
+        if (node.label == null) {
           errors.push(new E(node, "LabeledStatement `label` member must be an Identifier node"));
-        if (!isStatement(node.body))
-          errors.push(new E(node, "LabeledStatement `body` member must be a statement node"));
-        if (node.label != null) {
-          if (state.labels.indexOf(node.label.name) >= 0)
+        } else {
+          if (node.label.type !== "Identifier")
+            errors.push(new E(node, "LabeledStatement `label` member must be an Identifier node"));
+          else if (state.labels.indexOf(node.label.name) >= 0)
             errors.push(new E(node, "LabeledStatement must not be nested within a LabeledStatement with the same label"));
           [].push.apply(errors, recurse(node.label));
-          if (node.body != null)
-            [].push.apply(errors, errorsP(merge({}, state, {labels: state.labels.concat(node.label.name)}))(node.body));
-        } else if (node.body != null) {
-            [].push.apply(errors, recurse(node.body));
+        }
+        if (!isStatement(node.body))
+          errors.push(new E(node, "LabeledStatement `body` member must be a statement node"));
+        if (node.body != null) {
+          if (node.label != null)
+              [].push.apply(errors, errorsP(merge({}, state, {labels: state.labels.concat(node.label.name)}))(node.body));
+          else
+              [].push.apply(errors, recurse(node.body));
         }
         break;
 
@@ -372,12 +375,14 @@ function errorsP(state) {
           case "String":
             break;
           case "Number":
-            if (node.value !== node.value)
+            if (node.value !== node.value) {
               errors.push(new E(node, "numeric Literal nodes must not be NaN"));
-            else if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
+            } else {
+              if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
               errors.push(new E(node, "numeric Literal nodes must not be negative"));
-            if (!isFinite(node.value))
-              errors.push(new E(node, "numeric Literal nodes must be finite"));
+              if (!isFinite(node.value))
+                errors.push(new E(node, "numeric Literal nodes must be finite"));
+            }
             break;
           default:
             errors.push(new E(node, "Literal nodes must have a boolean, null, regexp, string, or number as the `value` member"));
