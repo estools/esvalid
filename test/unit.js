@@ -18,11 +18,13 @@ function wrapProgram(n) { return {type: "Program", body: [n]}; }
 // wrap a statement in an iteration statement
 function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
 // wrap a statement in a function expression
-function FE(n) { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [n]}}; }
+function FE() { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: arguments}}; }
 // wrap a statement in a function declaration
-function FD(n) { return {type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [n]}}; }
-// wrap a statement in an iteration statement
+function FD() { return {type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: arguments}}; }
+// wrap a statement in a labeledstatement
 function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifier", name: l}, body: n}; }
+// wrap an expression in an expressionstatement
+function exprStmt(e) { return {type: "ExpressionStatement", expression: e}; }
 
 
 function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
@@ -36,7 +38,7 @@ function invalidStmt(n, x, msg) {
 function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
 function invalidExpr(n, x, msg) {
   assert.ok(!esvalid.isValidExpression(x), msg);
-  var errors = esvalid.errors(wrapProgram({type: "ExpressionStatement", expression: x}));
+  var errors = esvalid.errors(wrapProgram(exprStmt(x)));
   errors.forEach(function(e) { assert.notEqual(e.node, null, msg); });
   assert.equal(n, errors.length, msg);
 }
@@ -45,7 +47,7 @@ function invalidExpr(n, x, msg) {
 suite("unit", function(){
 
   test("non-nodes", function() {
-    function invalid(n, x, msg) {
+    function invalid(x, msg) {
       assert.ok(!esvalid.isValid(x), msg);
       var errors = esvalid.errors(x);
       assert.notEqual(errors.length, 0, msg);
@@ -255,6 +257,7 @@ suite("unit", function(){
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [FD(STMT)]}});
     invalidStmt(3, {type: "FunctionDeclaration"});
     invalidStmt(1, {type: "FunctionDeclaration", params: [], body: BLOCK});
+    invalidStmt(1, {type: "FunctionDeclaration", id: ID, params: [], body: EXPR});
     invalidStmt(1, {type: "FunctionDeclaration", id: null, params: [], body: BLOCK});
     invalidStmt(1, {type: "FunctionDeclaration", id: ID, params: []});
     invalidStmt(1, {type: "FunctionDeclaration", id: STMT, params: [], body: BLOCK});
@@ -273,6 +276,7 @@ suite("unit", function(){
     invalidExpr(1, {type: "FunctionExpression", params: []});
     invalidExpr(1, {type: "FunctionExpression", body: BLOCK});
     invalidExpr(1, {type: "FunctionExpression", params: [null], body: BLOCK});
+    invalidExpr(1, {type: "FunctionExpression", params: [], body: EXPR});
     invalidExpr(1, {type: "FunctionExpression", id: STMT, params: [], body: BLOCK});
     invalidExpr(1, {type: "FunctionExpression", id: ID, params: [STMT], body: BLOCK});
   });
@@ -317,14 +321,14 @@ suite("unit", function(){
   test("LabeledStatement", function() {
     validStmt({type: "LabeledStatement", label: ID, body: STMT});
     validStmt(label("a", label("b", STMT)));
-    validStmt(label("y", {type: "ExpressionStatement", expression: FE(FD(label("a", STMT)))}));
+    validStmt(label("y", exprStmt(FE(FD(label("a", STMT))))));
     invalidStmt(2, {type: "LabeledStatement"});
     invalidStmt(1, {type: "LabeledStatement", label: null, body: STMT});
     invalidStmt(2, {type: "LabeledStatement", label: 0, body: STMT});
     invalidStmt(1, {type: "LabeledStatement", label: ID, body: null});
     invalidStmt(2, {type: "LabeledStatement", label: ID, body: false});
     invalidStmt(1, label("a", label("a", STMT)));
-    invalidStmt(1, label("a", {type: "ExpressionStatement", expression: FE(label("a", STMT))}));
+    invalidStmt(1, label("a", exprStmt(FE(label("a", STMT)))));
   });
 
   test("Literal", function() {
@@ -592,6 +596,19 @@ suite("unit", function(){
     invalidStmt(1, {type: "WithStatement", body: STMT});
     invalidStmt(1, {type: "WithStatement", object: STMT, body: STMT});
     invalidStmt(1, {type: "WithStatement", object: EXPR, body: EXPR});
+  });
+
+
+  suite("strict mode", function() {
+
+    test("basic directive support", function() {
+      validStmt(FD(exprStmt({type: "Literal", value: "use strict"})));
+      validStmt(FD(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"})));
+      validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "use strict"}))));
+      validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"}))));
+      validStmt(exprStmt({type: "Literal", value: "use strict"}));
+    });
+
   });
 
 });

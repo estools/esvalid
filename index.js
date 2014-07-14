@@ -7,6 +7,15 @@ function getClass(obj) {
   return {}.toString.call(obj).slice(8, -1);
 }
 
+// any :: forall a. [a] -> (a -> Boolean) -> Boolean
+function any(predicate, xs) {
+  for (var i = 0, l = xs.length; i < l; ++i) {
+    if (predicate(xs[i])) return true;
+  }
+  return false;
+}
+
+// concatMap :: forall a b. -> (a -> [b]) -> [a] -> [b]
 function concatMap(fn, xs) {
   var result = [];
   for (var i = 0, l = xs.length; i < l; ++i) {
@@ -30,6 +39,15 @@ var isExpression = esutils.ast.isExpression;
 var isStatement = esutils.ast.isStatement;
 // isSourceElement :: Node -> Boolean
 var isSourceElement = esutils.ast.isSourceElement;
+// directives :: [Maybe Node] -> [Node]
+function directives(stmts) {
+  if (stmts && stmts.length > 0) {
+    var s = stmts[0];
+    if (s && s.type === "ExpressionStatement" && s.expression && s.expression.type === "Literal" && typeof s.expression.value === "string")
+      return [s.expression.value].concat(directives([].slice.call(stmts, 1)));
+  }
+  return [];
+}
 
 var OBJECT_PROPERTY_KINDS = ["init", "get", "set"];
 var VARIABLE_DECLARATION_KINDS = ["var", "let", "const"];
@@ -70,7 +88,7 @@ var E, InvalidAstError = E = (function() {
 // errorsP :: {labels :: [Label], inFunc :: Boolean, inIter :: Boolean, inSwitch :: Boolean} -> Node -> [InvalidAstError]
 function errorsP(state) {
   return function recurse(node) {
-    var errors = [], line, column;
+    var errors = [], line, column, strict, recursionFn;
 
     if (node.loc != null) {
       if (node.loc.source != null && typeof node.loc.source !== "string")
@@ -295,8 +313,17 @@ function errorsP(state) {
           errors.push(new E(node, "FunctionDeclaration `body` member must be an BlockStatement node"));
         if (node.id != null)
           [].push.apply(errors, recurse(node.id));
-        if (node.body != null)
-          [].push.apply(errors, errorsP(merge({}, state, {inFunc: true}))({type: "Program", body: node.body.body}));
+        if (node.body != null) {
+          recursionFn = errorsP(merge({}, state, {inFunc: true}));
+          if (node.body.type === "BlockStatement") {
+            strict = state.strict || any(function(d) { return d === "use strict"; }, directives(node.body.body));
+            if (strict && !state.strict)
+              recursionFn = errorsP(merge({}, state, {strict: true, inFunc: true}));
+            [].push.apply(errors, recursionFn({type: "Program", body: node.body.body}));
+          } else {
+            [].push.apply(errors, recursionFn(node.body));
+          }
+        }
         break;
 
       case "FunctionExpression":
@@ -316,8 +343,17 @@ function errorsP(state) {
           errors.push(new E(node, "FunctionExpression `body` member must be an BlockStatement node"));
         if (node.id != null)
           [].push.apply(errors, recurse(node.id));
-        if (node.body != null)
-          [].push.apply(errors, errorsP(merge({}, state, {inFunc: true}))({type: "Program", body: node.body.body}));
+        if (node.body != null) {
+          recursionFn = errorsP(merge({}, state, {inFunc: true}));
+          if (node.body.type === "BlockStatement") {
+            strict = state.strict || any(function(d) { return d === "use strict"; }, directives(node.body.body));
+            if (strict && !state.strict)
+              recursionFn = errorsP(merge({}, state, {strict: true, inFunc: true}));
+            [].push.apply(errors, recursionFn({type: "Program", body: node.body.body}));
+          } else {
+            [].push.apply(errors, recursionFn(node.body));
+          }
+        }
         break;
 
       case "Identifier":
@@ -473,17 +509,20 @@ function errorsP(state) {
         break;
 
       case "Program":
-        if (node.body == null)
+        if (node.body == null) {
           errors.push(new E(node, "Program `body` member must be non-null"));
-        else
+        } else {
+          strict = state.strict || any(function(d) { return d === "use strict"; }, directives(node.body));
+          recursionFn = strict && !state.strict ? errorsP(merge({}, state, {strict: true})) : recurse;
           [].push.apply(errors, concatMap(function(sourceElement) {
             var es = [];
             if (!isSourceElement(sourceElement))
               es.push(new E(sourceElement != null ? sourceElement : node, "Program `body` member must only contain statement or function declaration nodes"));
             if (sourceElement != null)
-              [].push.apply(es, recurse(sourceElement));
+              [].push.apply(es, recursionFn(sourceElement));
             return es;
           }, node.body));
+        }
         break;
 
       case "ReturnStatement":
@@ -519,17 +558,19 @@ function errorsP(state) {
             errors.push(new E(node, "SwitchCase `test` member must be an expression node or null"));
           [].push.apply(errors, recurse(node.test));
         }
-        if (node.consequent == null)
+        if (node.consequent == null) {
           errors.push(new E(node, "SwitchCase `consequent` member must be non-null"));
-        else
+        } else {
+          recursionFn = errorsP(merge({}, state, {inSwitch: true}));
           [].push.apply(errors, concatMap(function(stmt) {
             var es = [];
             if (!isStatement(stmt))
               es.push(new E(stmt != null ? stmt : node, "SwitchCase `consequent` member must only contain statement nodes"));
             if (stmt != null)
-              [].push.apply(es, errorsP(merge({}, state, {inSwitch: true}))(stmt));
+              [].push.apply(es, recursionFn(stmt));
             return es;
           }, node.consequent));
+        }
         break;
 
       case "SwitchStatement":
@@ -677,7 +718,7 @@ function errorsP(state) {
   };
 }
 
-var START_STATE = {labels: [], inFunc: false, inIter: false, inSwitch: false};
+var START_STATE = {labels: [], inFunc: false, inIter: false, inSwitch: false, strict: false};
 
 module.exports = {
 
