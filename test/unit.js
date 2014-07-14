@@ -285,13 +285,14 @@ suite("unit", function(){
     validExpr({type: "Identifier", name: "x"});
     validExpr({type: "Identifier", name: "varx"});
     validExpr({type: "Identifier", name: "xvar"});
+    validExpr({type: "Identifier", name: "let"});
+    validExpr({type: "Identifier", name: "yield"}); // ES5 only
     invalidExpr(1, {type: "Identifier"});
     invalidExpr(1, {type: "Identifier", name: null});
     invalidExpr(1, {type: "Identifier", name: ""});
     invalidExpr(1, {type: "Identifier", name: "var"});
-    invalidExpr(1, {type: "Identifier", name: "implements"});
-    invalidExpr(1, {type: "Identifier", name: "let"});
-    invalidExpr(1, {type: "Identifier", name: "yield"});
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "Identifier", name: "let"})));
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "Identifier", name: "yield"})));
   });
 
   test("IfStatement", function() {

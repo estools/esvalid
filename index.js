@@ -361,7 +361,7 @@ function errorsP(state) {
           errors.push(new E(node, "Identifier `name` member must not be null"));
         else if (!esutils.keyword.isIdentifierName(node.name))
           errors.push(new E(node, "Identifier `name` member must a valid IdentifierName"));
-        else if (esutils.keyword.isReservedWordES6(node.name, true))
+        else if (esutils.keyword.isReservedWordES5(node.name, state.strict))
           errors.push(new E(node, "Identifier `name` member must not be a ReservedWord"));
         break;
 
