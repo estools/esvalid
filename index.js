@@ -592,7 +592,7 @@ function errorsP(state) {
           errors.push(new E(node, "SwitchStatement `cases` member must be non-null"));
         } else {
           if (node.cases.length < 1)
-            errors.push(new E(node, "SwitchStatement `cases` member length must be >= 2"));
+            errors.push(new E(node, "SwitchStatement `cases` member must be non-empty"));
           [].push.apply(errors, concatMap(function(switchCase) {
             var es = [];
             if (switchCase == null || switchCase.type !== "SwitchCase")
