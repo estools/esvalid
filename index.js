@@ -360,7 +360,7 @@ function errorsP(state) {
         if (node.name == null)
           errors.push(new E(node, "Identifier `name` member must not be null"));
         else if (!esutils.keyword.isIdentifierName(node.name))
-          errors.push(new E(node, "Identifier `name` member must a valid IdentifierName"));
+          errors.push(new E(node, "Identifier `name` member must be a valid IdentifierName"));
         else if (esutils.keyword.isReservedWordES5(node.name, state.strict))
           errors.push(new E(node, "Identifier `name` member must not be a ReservedWord"));
         break;
@@ -373,7 +373,6 @@ function errorsP(state) {
         if (node.alternate != null && !isStatement(node.alternate))
           errors.push(new E(node, "IfStatement `alternate` member must be a statement node or null"));
         if (node.alternate != null && node.consequent != null && esutils.ast.isProblematicIfStatement(node))
-
           errors.push(new E(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
         if (node.test != null)
           [].push.apply(errors, recurse(node.test));
