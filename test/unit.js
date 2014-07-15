@@ -418,6 +418,9 @@ suite("unit", function(){
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "__proto__"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
+    validExpr(FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "hasOwnProperty"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
     invalidExpr(1, {type: "ObjectExpression"});
     invalidExpr(1, {type: "ObjectExpression", properties: [null]});
     invalidExpr(3, {type: "ObjectExpression", properties: [{}]});
@@ -434,6 +437,9 @@ suite("unit", function(){
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "a-b"}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
   });
 
   test("Program", function() {

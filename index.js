@@ -474,11 +474,12 @@ function errorsP(state) {
         break;
 
       case "ObjectExpression":
-        if (node.properties == null)
+        if (node.properties == null) {
           errors.push(new E(node, "ObjectExpression `properties` member must be non-null"));
-        else
+        } else {
+          var keySet = {};
           [].push.apply(errors, concatMap(function(property) {
-            var es = [];
+            var es = [], key;
             if (property == null)
               return [new E(node, "ObjectExpression `properties` must not contain null values")];
             if (!isExpression(property.value))
@@ -487,25 +488,37 @@ function errorsP(state) {
               [].push.apply(es, recurse(property.value));
             if (OBJECT_PROPERTY_KINDS.indexOf(property.kind) < 0)
               es.push(new E(property, "ObjectExpression property `kind` member must be one of " + JSON.stringify(OBJECT_PROPERTY_KINDS)));
-            if (property.key == null)
+            if (property.key == null) {
               es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
-            else
+            } else {
               switch (property.key.type) {
                 case "Identifier":
                   if (property.key.name == null || !esutils.keyword.isIdentifierName(property.key.name))
                     es.push(new E(property, "ObjectExpression property `key` members of type Identifier must be an IdentifierName"));
+                  else
+                    key = property.key.name;
                   break;
                 case "Literal":
-                  if (["Number", "String"].indexOf(getClass(property.key.value)) < 0)
+                  if (["Number", "String"].indexOf(getClass(property.key.value)) < 0) {
                     es.push(new E(property, "ObjectExpression property `key` members of type Literal must have either a number or string `value` member"));
-                  else
+                  } else {
                     [].push.apply(es, recurse(property.key));
+                    key = property.key.value;
+                  }
                   break;
-                 default:
+                default:
                   es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
               }
+              if (state.strict && key != null) {
+                if ({}.hasOwnProperty.call(keySet, "$" + key))
+                  es.push(new E(property, "duplicate data property in object literal not allowed in strict mode"));
+                else
+                  keySet["$" + key] = true;
+              }
+            }
             return es;
           }, node.properties));
+        }
         break;
 
       case "Program":
