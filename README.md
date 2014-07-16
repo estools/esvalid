@@ -48,3 +48,30 @@ error instanceof esvalid.InvalidAstError; // true
 error.node; // {type: "Program", body: null}
 error.message; // "Program `body` member must be non-null"
 ```
+
+## Validity Tests
+
+This is a list of all esvalid validity tests other than `null` tests and type checks.
+
+* BreakStatement must have an IterationStatement or SwitchStatement as an ancestor
+* labelled BreakStatement must have a matching LabeledStatement ancestor
+* ContinueStatement must have an IterationStatement as an ancestor
+* labelled ContinueStatement must have a matching LabeledStatement ancestor
+* Identifier `name` member must be a valid IdentifierName
+* Identifier `name` member must not be a ReservedWord
+* IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`
+* LabeledStatement must not be nested within a LabeledStatement with the same label
+* numeric Literal nodes must not be NaN
+* numeric Literal nodes must not be negative
+* numeric Literal nodes must be finite
+* static MemberExpression `property` member must have a valid IdentifierName `name` member
+* ObjectExpression getter property `value` member must have zero parameters
+* ObjectExpression setter property `value` member must have exactly one parameter
+* duplicate data property in object literal not allowed in strict mode
+* ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node
+* SequenceExpression `expressions` member length must be >= 2
+* SwitchStatement `cases` member length must be >= 1
+* SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member
+* TryStatement must have a non-null `handler` member or a non-null `finalizer` member
+* `delete` with unqualified identifier not allowed in strict mode
+* VariableDeclaration `declarations` member must be non-empty

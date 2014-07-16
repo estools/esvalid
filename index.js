@@ -668,7 +668,7 @@ function errorsP(state) {
         if (node.argument != null) {
           [].push.apply(errors, recurse(node.argument));
           if (state.strict && node.operator === "delete" && node.argument.type === "Identifier")
-            errors.push(new E(node, "`delete` with bare identifier not allowed in strict mode"));
+            errors.push(new E(node, "`delete` with unqualified identifier not allowed in strict mode"));
         }
         break;
 
