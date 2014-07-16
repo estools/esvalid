@@ -542,11 +542,15 @@ suite("unit", function(){
   test("UnaryExpression", function() {
     validExpr({type: "UnaryExpression", operator: "+", argument: EXPR});
     validExpr({type: "UnaryExpression", operator: "!", argument: EXPR});
+    validExpr({type: "UnaryExpression", operator: "delete", argument: NUM});
+    validExpr({type: "UnaryExpression", operator: "delete", argument: ID});
+    validExpr(FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "UnaryExpression", operator: "delete", argument: NUM})));
     invalidExpr(1, {type: "UnaryExpression", operator: "/", argument: EXPR});
     invalidExpr(1, {type: "UnaryExpression", operator: "+", argument: STMT});
     invalidExpr(1, {type: "UnaryExpression", operator: "+"});
     invalidExpr(1, {type: "UnaryExpression", argument: EXPR});
     invalidExpr(2, {type: "UnaryExpression"});
+    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "UnaryExpression", operator: "delete", argument: ID})));
   });
 
   test("UpdateExpression", function() {

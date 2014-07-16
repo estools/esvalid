@@ -646,8 +646,11 @@ function errorsP(state) {
           errors.push(new E(node, "UnaryExpression `operator` member must be one of " + JSON.stringify(UNARY_OPERATORS)));
         if (!isExpression(node.argument))
           errors.push(new E(node, "UnaryExpression `argument` member must be an expression node"));
-        if (node.argument != null)
+        if (node.argument != null) {
           [].push.apply(errors, recurse(node.argument));
+          if (state.strict && node.operator === "delete" && node.argument.type === "Identifier")
+            errors.push(new E(node, "`delete` with bare identifier not allowed in strict mode"));
+        }
         break;
 
       case "UpdateExpression":
