@@ -485,8 +485,27 @@ function errorsP(state) {
               es.push(new E(property, "ObjectExpression property `value` member must be an expression node"));
             if (property.value != null)
               [].push.apply(es, recurse(property.value));
-            if (OBJECT_PROPERTY_KINDS.indexOf(property.kind) < 0)
-              es.push(new E(property, "ObjectExpression property `kind` member must be one of " + JSON.stringify(OBJECT_PROPERTY_KINDS)));
+            switch (property.kind) {
+              case "init": break;
+              case "get":
+                if (property.value != null) {
+                  if (property.value.type !== "FunctionExpression")
+                    es.push(new E(property.value, "ObjectExpression getter property `value` member must be a FunctionExpression node"));
+                  else if (property.value.params == null || property.value.params.length !== 0)
+                    es.push(new E(property.value, "ObjectExpression getter property `value` member must have zero parameters"));
+                }
+                break;
+              case "set":
+                if (property.value != null) {
+                  if (property.value.type !== "FunctionExpression")
+                    es.push(new E(property.value, "ObjectExpression setter property `value` member must be a FunctionExpression node"));
+                  else if (property.value.params == null || property.value.params.length !== 1)
+                    es.push(new E(property.value, "ObjectExpression setter property `value` member must have exactly one parameter"));
+                }
+                break;
+              default:
+                es.push(new E(property, "ObjectExpression property `kind` member must be one of " + JSON.stringify(OBJECT_PROPERTY_KINDS)));
+            }
             if (property.key == null) {
               es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
             } else {

@@ -413,8 +413,8 @@ suite("unit", function(){
   test("ObjectExpression", function() {
     validExpr({type: "ObjectExpression", properties: []});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: EXPR}]});
-    validExpr({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: EXPR}]});
-    validExpr({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: EXPR}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
@@ -440,6 +440,13 @@ suite("unit", function(){
     invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
     invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
     invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: null}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: ID}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: null}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: ID}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID, ID], body: BLOCK}}]});
   });
 
   test("Program", function() {
