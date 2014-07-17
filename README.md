@@ -75,3 +75,4 @@ This is a list of all esvalid validity tests other than `null` tests and type ch
 * TryStatement must have a non-null `handler` member or a non-null `finalizer` member
 * `delete` with unqualified identifier not allowed in strict mode
 * VariableDeclaration `declarations` member must be non-empty
+* WithStatement not allowed in strict mode

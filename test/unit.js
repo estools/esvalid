@@ -616,6 +616,7 @@ suite("unit", function(){
     invalidStmt(1, {type: "WithStatement", body: STMT});
     invalidStmt(1, {type: "WithStatement", object: STMT, body: STMT});
     invalidStmt(1, {type: "WithStatement", object: EXPR, body: EXPR});
+    invalidExpr(1, strictFE({type: "WithStatement", object: EXPR, body: STMT}));
   });
 
 

@@ -724,6 +724,8 @@ function errorsP(state) {
         break;
 
       case "WithStatement":
+        if (state.strict)
+          errors.push(new E(node, "WithStatement not allowed in strict mode"));
         if (!isExpression(node.object))
           errors.push(new E(node, "WithStatement `object` member must be an expression node"));
         if (!isStatement(node.body))
