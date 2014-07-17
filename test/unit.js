@@ -17,14 +17,16 @@ var CATCH = {type: "CatchClause", param: ID, body: BLOCK};
 function wrapProgram(n) { return {type: "Program", body: [n]}; }
 // wrap a statement in an iteration statement
 function wrapIter(n) { return {type: "WhileStatement", test: {type: "Literal", value: true}, body: n}; }
-// wrap a statement in a function expression
+// wrap zero or more statements in a function expression
 function FE() { return {type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: arguments}}; }
-// wrap a statement in a function declaration
+// wrap zero or more statements in a function declaration
 function FD() { return {type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: arguments}}; }
 // wrap a statement in a labeledstatement
 function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifier", name: l}, body: n}; }
 // wrap an expression in an expressionstatement
 function exprStmt(e) { return {type: "ExpressionStatement", expression: e}; }
+// wrap zero or more statements in a strict-mode function expression
+function strictFE() { return FE.apply(null, [exprStmt({type: "Literal", value: "use strict"})].concat([].slice.call(arguments))); }
 
 
 function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
@@ -291,8 +293,8 @@ suite("unit", function(){
     invalidExpr(1, {type: "Identifier", name: null});
     invalidExpr(1, {type: "Identifier", name: ""});
     invalidExpr(1, {type: "Identifier", name: "var"});
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "Identifier", name: "let"})));
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "Identifier", name: "yield"})));
+    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "let"})));
+    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "yield"})));
   });
 
   test("IfStatement", function() {
@@ -420,7 +422,7 @@ suite("unit", function(){
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "__proto__"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
-    validExpr(FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "hasOwnProperty"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
+    validExpr(strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "hasOwnProperty"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
     invalidExpr(1, {type: "ObjectExpression"});
     invalidExpr(1, {type: "ObjectExpression", properties: [null]});
     invalidExpr(3, {type: "ObjectExpression", properties: [{}]});
@@ -437,9 +439,9 @@ suite("unit", function(){
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "a-b"}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: null}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: ID}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
@@ -551,13 +553,13 @@ suite("unit", function(){
     validExpr({type: "UnaryExpression", operator: "!", argument: EXPR});
     validExpr({type: "UnaryExpression", operator: "delete", argument: NUM});
     validExpr({type: "UnaryExpression", operator: "delete", argument: ID});
-    validExpr(FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "UnaryExpression", operator: "delete", argument: NUM})));
+    validExpr(strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: NUM})));
     invalidExpr(1, {type: "UnaryExpression", operator: "/", argument: EXPR});
     invalidExpr(1, {type: "UnaryExpression", operator: "+", argument: STMT});
     invalidExpr(1, {type: "UnaryExpression", operator: "+"});
     invalidExpr(1, {type: "UnaryExpression", argument: EXPR});
     invalidExpr(2, {type: "UnaryExpression"});
-    invalidExpr(1, FE(exprStmt({type: "Literal", value: "use strict"}), exprStmt({type: "UnaryExpression", operator: "delete", argument: ID})));
+    invalidExpr(1, strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: ID})));
   });
 
   test("UpdateExpression", function() {
@@ -625,6 +627,7 @@ suite("unit", function(){
       validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "use strict"}))));
       validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"}))));
       validStmt(exprStmt({type: "Literal", value: "use strict"}));
+      validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
     });
 
   });
