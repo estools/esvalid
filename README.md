@@ -62,7 +62,7 @@ This is a list of all esvalid validity tests other than `null` tests and type ch
 * IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`
 * LabeledStatement must not be nested within a LabeledStatement with the same label
 * numeric Literal nodes must not be NaN
-* numeric Literal nodes must not be negative
+* numeric Literal nodes must be non-negative
 * numeric Literal nodes must be finite
 * static MemberExpression `property` member must have a valid IdentifierName `name` member
 * ObjectExpression getter property `value` member must have zero parameters

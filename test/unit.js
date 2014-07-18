@@ -44,7 +44,7 @@ function invalidExpr(n, x, msg) {
 }
 
 
-suite("unit", function(){
+suite("unit", function() {
 
   test("non-nodes", function() {
     function invalid(x, msg) {
@@ -63,6 +63,141 @@ suite("unit", function(){
     invalid({type: ""});
     invalid({type: "Node"});
   });
+
+  test("BreakStatement", function() {
+    validStmt(label(ID.name, wrapIter({type: "BreakStatement", label: ID})));
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement"}]}]});
+    invalidStmt(1, wrapIter({type: "BreakStatement", label:ID}));
+    invalidStmt(1, label(ID.name + ID.name, wrapIter({type: "BreakStatement", label: ID})));
+    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement", label: ID}]}]});
+  });
+
+  test("ContinueStatement", function() {
+    validStmt(label(ID.name, wrapIter({type: "ContinueStatement", label: ID})));
+    invalidStmt(1, wrapIter({type: "ContinueStatement", label:ID}));
+    invalidStmt(1, label(ID.name + ID.name, wrapIter({type: "ContinueStatement", label: ID})));
+  });
+
+  test("Identifier `name` member must be a valid IdentifierName", function() {
+    validExpr({type: "Identifier", name: "x"});
+    validExpr({type: "Identifier", name: "$"});
+    validExpr({type: "Identifier", name: "_"});
+    validExpr({type: "Identifier", name: "_$0x"});
+    invalidExpr(1, {type: "Identifier", name: ""});
+    invalidExpr(1, {type: "Identifier", name: "a-b"});
+    invalidExpr(1, {type: "Identifier", name: "0x0"});
+  });
+
+  test("Identifier `name` member must not be a ReservedWord", function() {
+    validExpr({type: "Identifier", name: "varx"});
+    validExpr({type: "Identifier", name: "xvar"});
+    validExpr({type: "Identifier", name: "varif"});
+    validExpr({type: "Identifier", name: "if_var"});
+    validExpr({type: "Identifier", name: "function0"});
+    invalidExpr(1, {type: "Identifier", name: "if"});
+    invalidExpr(1, {type: "Identifier", name: "var"});
+    invalidExpr(1, {type: "Identifier", name: "function"});
+  });
+
+  test("IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`", function() {
+    validStmt({type: "IfStatement", test: EXPR, consequent: {type: "DoWhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "LabeledStatement", label: ID, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "WhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "WithStatement", object: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "ForStatement", init: EXPR, test: EXPR, update: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "ForInStatement", left: EXPR, right: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
+  });
+
+  test("LabeledStatement must not be nested within a LabeledStatement with the same label", function() {
+    validStmt(label("a", label("b", STMT)));
+    validStmt(label("y", exprStmt(FE(FD(label("a", STMT))))));
+    invalidStmt(1, label("a", label("a", STMT)));
+    invalidStmt(1, label("a", exprStmt(FE(label("a", STMT)))));
+  });
+
+  test("numeric Literal nodes must not be NaN", function() {
+    invalidExpr(1, {type: "Literal", value: 0 / 0});
+  });
+
+  test("numeric Literal nodes must be non-negative", function() {
+    invalidExpr(1, {type: "Literal", value: -0});
+    invalidExpr(1, {type: "Literal", value: -1});
+    invalidExpr(1, {type: "Literal", value: -1e308});
+    invalidExpr(1, {type: "Literal", value: -1e-308});
+  });
+
+  test("numeric Literal nodes must be finite", function() {
+    invalidExpr(1, {type: "Literal", value: 1 / 0});
+    invalidExpr(2, {type: "Literal", value: -1 / 0});
+  });
+
+  test("static MemberExpression `property` member must have a valid IdentifierName `name` member", function() {
+    validExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "var"}});
+    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier"}});
+    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: null}});
+    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: ""}});
+    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "0"}});
+    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "a-b"}});
+  });
+
+  test("ObjectExpression getter property `value` member must have zero parameters", function() {
+    validExpr({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: ID}]});
+    invalidExpr(2, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionDeclaration", id: ID, params: [], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
+  });
+
+  test("ObjectExpression setter property `value` member must have exactly one parameter", function() {
+    validExpr({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: ID}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
+    invalidExpr(2, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionDeclaration", id: ID, params: [ID], body: BLOCK}}]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID, ID], body: BLOCK}}]});
+  });
+
+  test("ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node", function() {
+    validExpr(FE({type: "ReturnStatement"}));
+    validStmt(FD({type: "ReturnStatement"}));
+    invalidStmt(1, {type: "ReturnStatement"});
+  });
+
+  test("SequenceExpression `expressions` member length must be >= 2", function() {
+    invalidExpr(1, {type: "SequenceExpression", expressions: []});
+    invalidExpr(1, {type: "SequenceExpression", expressions: [EXPR]});
+    validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR]});
+    validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR, EXPR]});
+    validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR, EXPR, EXPR]});
+  });
+
+  test("SwitchStatement `cases` member length must be >= 1", function() {
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
+    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: []});
+  });
+
+  test("SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member", function() {
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
+    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
+  });
+
+  test("TryStatement must have a non-null `handler` member or a non-null `finalizer` member", function() {
+    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH});
+    validStmt({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
+    invalidStmt(1, {type: "TryStatement", block: BLOCK});
+  });
+
+  test("VariableDeclaration `declarations` member must be non-empty", function() {
+    validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]});
+    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: []});
+  });
+
+});
+
+
+suite("type checks", function() {
 
   test("Node", function() {
     invalidStmt(2, {type: "EmptyStatement", loc: {}});
@@ -139,9 +274,9 @@ suite("unit", function(){
     validStmt(wrapIter({type: "BreakStatement", label: null}));
     validStmt(label(ID.name, wrapIter({type: "BreakStatement", label: ID})));
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement"}]}]});
+    invalidStmt(1, label(ID.name, wrapIter({type: "BreakStatement", label: STMT})));
+    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "BreakStatement", label: STMT}]}]});
     invalidStmt(1, {type: "BreakStatement"});
-    invalidStmt(1, wrapIter({type: "BreakStatement", label: STMT}));
-    invalidStmt(1, label(ID.name + ID.name, wrapIter({type: "BreakStatement", label: ID})));
   });
 
   test("CallExpression", function() {
@@ -185,10 +320,8 @@ suite("unit", function(){
     validStmt(wrapIter({type: "ContinueStatement"}));
     validStmt(wrapIter({type: "ContinueStatement", label: null}));
     validStmt(label(ID.name, wrapIter({type: "ContinueStatement", label: ID})));
+    invalidStmt(1, label(ID.name, wrapIter({type: "ContinueStatement", label: STMT})));
     invalidStmt(1, {type: "ContinueStatement"});
-    invalidStmt(1, wrapIter({type: "ContinueStatement", label: STMT}));
-    invalidStmt(1, label(ID.name + ID.name, wrapIter({type: "ContinueStatement", label: ID})));
-    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [{type: "ContinueStatement"}]}]});
   });
 
   test("DebuggerStatement", function() {
@@ -283,12 +416,8 @@ suite("unit", function(){
 
   test("Identifier", function() {
     validExpr({type: "Identifier", name: "x"});
-    validExpr({type: "Identifier", name: "varx"});
-    validExpr({type: "Identifier", name: "xvar"});
     invalidExpr(1, {type: "Identifier"});
     invalidExpr(1, {type: "Identifier", name: null});
-    invalidExpr(1, {type: "Identifier", name: ""});
-    invalidExpr(1, {type: "Identifier", name: "var"});
   });
 
   test("IfStatement", function() {
@@ -298,34 +427,21 @@ suite("unit", function(){
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: STMT, alternate: BLOCK});
     validStmt({type: "IfStatement", test: EXPR, consequent: BLOCK, alternate: STMT});
-    validStmt({type: "IfStatement", test: EXPR, consequent: {type: "DoWhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
     invalidStmt(2, {type: "IfStatement"});
     invalidStmt(1, {type: "IfStatement", test: EXPR});
     invalidStmt(1, {type: "IfStatement", test: STMT, consequent: STMT});
     invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: EXPR});
     invalidStmt(1, {type: "IfStatement", test: EXPR, alternate: STMT});
     invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: STMT, alternate: EXPR});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT, alternate: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "LabeledStatement", label: ID, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "WhileStatement", test: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "WithStatement", object: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "ForStatement", init: EXPR, test: EXPR, update: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
-    invalidStmt(1, {type: "IfStatement", test: EXPR, consequent: {type: "ForInStatement", left: EXPR, right: EXPR, body: {type: "IfStatement", test: EXPR, consequent: STMT}}, alternate: STMT});
   });
 
   test("LabeledStatement", function() {
     validStmt({type: "LabeledStatement", label: ID, body: STMT});
-    validStmt(label("a", label("b", STMT)));
-    validStmt(label("y", exprStmt(FE(FD(label("a", STMT))))));
     invalidStmt(2, {type: "LabeledStatement"});
     invalidStmt(1, {type: "LabeledStatement", label: null, body: STMT});
     invalidStmt(2, {type: "LabeledStatement", label: 0, body: STMT});
     invalidStmt(1, {type: "LabeledStatement", label: ID, body: null});
     invalidStmt(2, {type: "LabeledStatement", label: ID, body: false});
-    invalidStmt(1, label("a", label("a", STMT)));
-    invalidStmt(1, label("a", exprStmt(FE(label("a", STMT)))));
   });
 
   test("Literal", function() {
@@ -342,13 +458,6 @@ suite("unit", function(){
     validExpr({type: "Literal", value: false});
     invalidExpr(1, {type: "Literal"});
     invalidExpr(1, {type: "Literal", value: void 0});
-    invalidExpr(1, {type: "Literal", value: -0});
-    invalidExpr(1, {type: "Literal", value: -1});
-    invalidExpr(1, {type: "Literal", value: -1e308});
-    invalidExpr(1, {type: "Literal", value: -1e-308});
-    invalidExpr(1, {type: "Literal", value: 1 / 0});
-    invalidExpr(2, {type: "Literal", value: -1 / 0});
-    invalidExpr(1, {type: "Literal", value: 0 / 0});
     invalidExpr(1, {type: "Literal", value: new Date});
     invalidExpr(1, {type: "Literal", value: arguments});
     invalidExpr(1, {type: "Literal", value: {}});
@@ -380,7 +489,6 @@ suite("unit", function(){
     validExpr({type: "MemberExpression", computed: true, object: EXPR, property: NUM});
     validExpr({type: "MemberExpression", computed: false, object: EXPR, property: ID});
     validExpr({type: "MemberExpression", object: EXPR, property: ID});
-    validExpr({type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "var"}});
     invalidExpr(2, {type: "MemberExpression"});
     invalidExpr(1, {type: "MemberExpression", computed: true, object: EXPR});
     invalidExpr(1, {type: "MemberExpression", computed: true, property: EXPR});
@@ -389,9 +497,6 @@ suite("unit", function(){
     invalidExpr(1, {type: "MemberExpression", computed: false, object: STMT, property: ID});
     invalidExpr(1, {type: "MemberExpression", computed: true, object: EXPR, property: STMT});
     invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: EXPR});
-    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier"}});
-    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: null}});
-    invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: ""}});
   });
 
   test("NewExpression", function() {
@@ -409,8 +514,6 @@ suite("unit", function(){
   test("ObjectExpression", function() {
     validExpr({type: "ObjectExpression", properties: []});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: ID, value: EXPR}]});
-    validExpr({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
-    validExpr({type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: NUM, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: STR, value: EXPR}]});
     validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Identifier", name: "var"}, value: EXPR}]});
@@ -431,12 +534,7 @@ suite("unit", function(){
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: null}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: /./}, value: EXPR}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: null}]});
-    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: ID}]});
-    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: null}]});
-    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: ID}]});
-    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
-    invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID, ID], body: BLOCK}}]});
   });
 
   test("Program", function() {
@@ -458,19 +556,18 @@ suite("unit", function(){
     validExpr(FE({type: "ReturnStatement", argument: null}));
     validExpr(FE({type: "ReturnStatement", argument: ID}));
     validExpr(FE({type: "ReturnStatement", argument: EXPR}));
-    invalidStmt(1, {type: "ReturnStatement"});
-    invalidStmt(1, {type: "ReturnStatement", argument: EXPR});
     invalidExpr(1, FE({type: "ReturnStatement", argument: STMT}));
   });
 
   test("SequenceExpression", function() {
     invalidExpr(1, {type: "SequenceExpression"});
     invalidExpr(1, {type: "SequenceExpression", expressions: null});
-    invalidExpr(1, {type: "SequenceExpression", expressions: []});
-    invalidExpr(1, {type: "SequenceExpression", expressions: [EXPR]});
     invalidExpr(1, {type: "SequenceExpression", expressions: [EXPR, STMT]});
     invalidExpr(1, {type: "SequenceExpression", expressions: [EXPR, null]});
+    invalidExpr(2, {type: "SequenceExpression", expressions: [null, null]});
     validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR]});
+    validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR, EXPR]});
+    validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR, EXPR, EXPR]});
   });
 
   test("SwitchCase", function() {
@@ -495,13 +592,11 @@ suite("unit", function(){
     invalidStmt(2, {type: "SwitchStatement"});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: null});
-    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: []});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [null]});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [ID]});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: STMT, consequent: []}]});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [EXPR]}]});
     invalidStmt(1, {type: "SwitchStatement", discriminant: STMT, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
-    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
   });
 
   test("ThisExpression", function() {
@@ -517,6 +612,13 @@ suite("unit", function(){
   });
 
   test("TryStatement", function() {
+    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH});
+    validStmt({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
+    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
+    validStmt({type: "TryStatement", block: BLOCK, handlers: [CATCH]});
+    validStmt({type: "TryStatement", block: BLOCK, handlers: [CATCH, CATCH]});
+    validStmt({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
+    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
     invalidStmt(2, {type: "TryStatement"});
     invalidStmt(1, {type: "TryStatement", block: BLOCK});
     invalidStmt(1, {type: "TryStatement", handler: CATCH});
@@ -527,13 +629,6 @@ suite("unit", function(){
     invalidStmt(1, {type: "TryStatement", block: BLOCK, handlers: []});
     invalidStmt(1, {type: "TryStatement", block: BLOCK, handlers: [CATCH, null, CATCH]});
     invalidStmt(1, {type: "TryStatement", block: BLOCK, handlers: [CATCH, BLOCK, CATCH]});
-    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH});
-    validStmt({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
-    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
-    validStmt({type: "TryStatement", block: BLOCK, handlers: [CATCH]});
-    validStmt({type: "TryStatement", block: BLOCK, handlers: [CATCH, CATCH]});
-    validStmt({type: "TryStatement", block: BLOCK, finalizer: BLOCK});
-    validStmt({type: "TryStatement", block: BLOCK, handler: CATCH, finalizer: BLOCK});
   });
 
   test("UnaryExpression", function() {
@@ -558,19 +653,18 @@ suite("unit", function(){
   });
 
   test("VariableDeclaration", function() {
-    invalidStmt(1, {type: "VariableDeclaration"});
-    invalidStmt(1, {type: "VariableDeclaration", declarations: null});
-    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: null});
-    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: []});
-    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: [null]});
-    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: [ID]});
-    invalidStmt(1, {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
-    invalidStmt(1, {type: "VariableDeclaration", kind: "ng", declarations: [{type: "VariableDeclarator", id: ID}]});
     validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}]});
     validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID, init: EXPR}]});
     validStmt({type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]});
     validStmt({type: "VariableDeclaration", kind: "let", declarations: [{type: "VariableDeclarator", id: ID}]});
     validStmt({type: "VariableDeclaration", kind: "const", declarations: [{type: "VariableDeclarator", id: ID}]});
+    invalidStmt(1, {type: "VariableDeclaration"});
+    invalidStmt(1, {type: "VariableDeclaration", declarations: null});
+    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: null});
+    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: [null]});
+    invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: [ID]});
+    invalidStmt(1, {type: "VariableDeclaration", declarations: [{type: "VariableDeclarator", id: ID}]});
+    invalidStmt(1, {type: "VariableDeclaration", kind: "ng", declarations: [{type: "VariableDeclarator", id: ID}]});
   });
 
   test("VariableDeclarator", function() {
@@ -602,49 +696,49 @@ suite("unit", function(){
     invalidStmt(1, {type: "WithStatement", object: EXPR, body: EXPR});
   });
 
+});
 
-  suite("strict mode", function() {
 
-    // wrap zero or more statements in a strict-mode function expression
-    function strictFE() { return FE.apply(null, [exprStmt({type: "Literal", value: "use strict"})].concat([].slice.call(arguments))); }
+suite("strict mode", function() {
 
-    test("basic directive support", function() {
-      validStmt(FD(exprStmt({type: "Literal", value: "use strict"})));
-      validStmt(FD(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"})));
-      validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "use strict"}))));
-      validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"}))));
-      validStmt(exprStmt({type: "Literal", value: "use strict"}));
-      validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
-    });
+  // wrap zero or more statements in a strict-mode function expression
+  function strictFE() { return FE.apply(null, [exprStmt({type: "Literal", value: "use strict"})].concat([].slice.call(arguments))); }
 
-    test("Identifier FutureReservedWords", function() {
-      validExpr({type: "Identifier", name: "let"});
-      validExpr({type: "Identifier", name: "yield"}); // ES5 only
-      invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "let"})));
-      invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "yield"})));
-    });
+  test("basic directive support", function() {
+    validStmt(FD(exprStmt({type: "Literal", value: "use strict"})));
+    validStmt(FD(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"})));
+    validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "use strict"}))));
+    validStmt(exprStmt(FE(exprStmt({type: "Literal", value: "directive"}), exprStmt({type: "Literal", value: "use strict"}))));
+    validStmt(exprStmt({type: "Literal", value: "use strict"}));
+    validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
+  });
 
-    test("ObjectExpression duplicate keys", function() {
-      validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
-      validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "__proto__"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
-      validExpr(strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "hasOwnProperty"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
-      invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
-      invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
-      invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
-    });
+  test("Identifier FutureReservedWords", function() {
+    validExpr({type: "Identifier", name: "let"});
+    validExpr({type: "Identifier", name: "yield"}); // ES5 only
+    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "let"})));
+    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "yield"})));
+  });
 
-    test("UnaryExpression delete with unqualified identifier", function() {
-      validExpr({type: "UnaryExpression", operator: "delete", argument: NUM});
-      validExpr({type: "UnaryExpression", operator: "delete", argument: ID});
-      validExpr(strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: NUM})));
-      invalidExpr(1, strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: ID})));
-    });
+  test("ObjectExpression duplicate keys", function() {
+    validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
+    validExpr({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "__proto__"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]});
+    validExpr(strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "hasOwnProperty"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "a"}, value: EXPR}, {kind: "init", key: {type: "Identifier", name: "a"}, value: EXPR}]})));
+    invalidExpr(1, strictFE(exprStmt({type: "ObjectExpression", properties: [{kind: "init", key: {type: "Literal", value: "0"}, value: EXPR}, {kind: "init", key: {type: "Literal", value: 0}, value: EXPR}]})));
+  });
 
-    test("WithStatement not allowed", function() {
-      validStmt({type: "WithStatement", object: EXPR, body: STMT});
-      invalidExpr(1, strictFE({type: "WithStatement", object: EXPR, body: STMT}));
-    });
+  test("UnaryExpression delete with unqualified identifier", function() {
+    validExpr({type: "UnaryExpression", operator: "delete", argument: NUM});
+    validExpr({type: "UnaryExpression", operator: "delete", argument: ID});
+    validExpr(strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: NUM})));
+    invalidExpr(1, strictFE(exprStmt({type: "UnaryExpression", operator: "delete", argument: ID})));
+  });
 
+  test("WithStatement not allowed", function() {
+    validStmt({type: "WithStatement", object: EXPR, body: STMT});
+    invalidExpr(1, strictFE({type: "WithStatement", object: EXPR, body: STMT}));
   });
 
 });

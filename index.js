@@ -358,7 +358,7 @@ function errorsP(state) {
 
       case "Identifier":
         if (node.name == null)
-          errors.push(new E(node, "Identifier `name` member must not be null"));
+          errors.push(new E(node, "Identifier `name` member must be non-null"));
         else if (!esutils.keyword.isIdentifierName(node.name))
           errors.push(new E(node, "Identifier `name` member must be a valid IdentifierName"));
         else if (esutils.keyword.isReservedWordES5(node.name, state.strict))
@@ -414,7 +414,7 @@ function errorsP(state) {
               errors.push(new E(node, "numeric Literal nodes must not be NaN"));
             } else {
               if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
-              errors.push(new E(node, "numeric Literal nodes must not be negative"));
+              errors.push(new E(node, "numeric Literal nodes must be non-negative"));
               if (!isFinite(node.value))
                 errors.push(new E(node, "numeric Literal nodes must be finite"));
             }
