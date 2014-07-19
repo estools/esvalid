@@ -22,7 +22,7 @@ test: build
 	$(ISTANBUL) cover $(MOCHA) -- $(MOCHA_OPTS) -- test/*.js
 
 lint: build
-	$(ESLINT) -- index.js test/*.js
+	$(ESLINT) -- index.js test-helpers.js test/*.js
 
 clean:
 	rm -rf lib
