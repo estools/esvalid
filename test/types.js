@@ -401,10 +401,12 @@ suite("type checks", function() {
   });
 
   test("SwitchStatement", function() {
-    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
-    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: []});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: []}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: []}]});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
+    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
     invalidStmt(2, {type: "SwitchStatement"});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: null});

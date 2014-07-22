@@ -70,7 +70,6 @@ This is a list of all esvalid validity tests other than `null` tests and type ch
 * duplicate data property in object literal not allowed in strict mode
 * ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node
 * SequenceExpression `expressions` member length must be >= 2
-* SwitchStatement `cases` member length must be >= 1
 * SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member
 * TryStatement must have a non-null `handler` member or a non-null `finalizer` member
 * `delete` with unqualified identifier not allowed in strict mode

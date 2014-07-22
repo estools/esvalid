@@ -141,12 +141,6 @@ suite("unit", function() {
     validExpr({type: "SequenceExpression", expressions: [EXPR, EXPR, EXPR, EXPR]});
   });
 
-  test("SwitchStatement `cases` member length must be >= 1", function() {
-    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
-    validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: EXPR, consequent: [STMT]}]});
-    invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: []});
-  });
-
   test("SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member", function() {
     validStmt({type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}]});
     invalidStmt(1, {type: "SwitchStatement", discriminant: EXPR, cases: [{type: "SwitchCase", test: null, consequent: [STMT]}, {type: "SwitchCase", test: null, consequent: [STMT]}]});
