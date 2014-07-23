@@ -112,6 +112,21 @@ suite("unit", function() {
     invalidExpr(1, {type: "MemberExpression", computed: false, object: EXPR, property: {type: "Identifier", name: "a-b"}});
   });
 
+  test("ObjectExpression conflicting init/get/set properties", function() {
+    var init = {kind: "init", key: ID, value: ID};
+    var getter = {kind: "get", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}};
+    var setter = {kind: "set", key: ID, value: {type: "FunctionExpression", params: [ID], body: BLOCK}};
+    validExpr({type: "ObjectExpression", properties: [init, init]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [init, getter]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [init, setter]});
+    validExpr({type: "ObjectExpression", properties: [getter, setter]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [getter, init]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [getter, getter]});
+    validExpr({type: "ObjectExpression", properties: [setter, getter]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [setter, init]});
+    invalidExpr(1, {type: "ObjectExpression", properties: [setter, setter]});
+  });
+
   test("ObjectExpression getter property `value` member must have zero parameters", function() {
     validExpr({type: "ObjectExpression", properties: [{kind: "get", key: ID, value: {type: "FunctionExpression", params: [], body: BLOCK}}]});
     invalidExpr(1, {type: "ObjectExpression", properties: [{kind: "get", key: ID, value: ID}]});

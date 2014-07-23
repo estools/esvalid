@@ -476,7 +476,7 @@ function errorsP(state) {
         if (node.properties == null) {
           errors.push(new E(node, "ObjectExpression `properties` member must be non-null"));
         } else {
-          var keySet = {};
+          var initKeySet = {}, getKeySet = {}, setKeySet = {};
           [].push.apply(errors, concatMap(function(property) {
             var es = [], key;
             if (property == null)
@@ -514,25 +514,45 @@ function errorsP(state) {
                   if (property.key.name == null || !esutils.keyword.isIdentifierName(property.key.name))
                     es.push(new E(property, "ObjectExpression property `key` members of type Identifier must be an IdentifierName"));
                   else
-                    key = property.key.name;
+                    key = "$" + property.key.name;
                   break;
                 case "Literal":
                   if (["Number", "String"].indexOf(getClass(property.key.value)) < 0) {
                     es.push(new E(property, "ObjectExpression property `key` members of type Literal must have either a number or string `value` member"));
                   } else {
                     [].push.apply(es, recurse(property.key));
-                    key = property.key.value;
+                    key = "$" + property.key.value;
                   }
                   break;
                 default:
                   es.push(new E(property, "ObjectExpression property `key` member must be an Identifier or Literal node"));
               }
-              if (state.strict && key != null) {
-                if ({}.hasOwnProperty.call(keySet, "$" + key))
-                  es.push(new E(property, "duplicate data property in object literal not allowed in strict mode"));
-                else
-                  keySet["$" + key] = true;
-              }
+              if (key != null)
+                switch (property.kind) {
+                  case "init":
+                    if (initKeySet.hasOwnProperty(key) && state.strict)
+                      es.push(new E(property, "ObjectExpression must not have more than one data property with the same name in strict mode"));
+                    if (getKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have data and getter properties with the same name"));
+                    if (setKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have data and setter properties with the same name"));
+                    initKeySet[key] = true;
+                    break;
+                  case "get":
+                    if (initKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have data and getter properties with the same name"));
+                    if (getKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have multiple getters with the same name"));
+                    getKeySet[key] = true;
+                    break;
+                  case "set":
+                    if (initKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have data and setter properties with the same name"));
+                    if (setKeySet.hasOwnProperty(key))
+                      es.push(new E(property, "ObjectExpression must not have multiple setters with the same name"));
+                    setKeySet[key] = true;
+                    break;
+                }
             }
             return es;
           }, node.properties));

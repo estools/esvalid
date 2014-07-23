@@ -67,7 +67,13 @@ This is a list of all esvalid validity tests other than `null` tests and type ch
 * static MemberExpression `property` member must have a valid IdentifierName `name` member
 * ObjectExpression getter property `value` member must have zero parameters
 * ObjectExpression setter property `value` member must have exactly one parameter
-* duplicate data property in object literal not allowed in strict mode
+* ObjectExpression must not have more than one data property with the same name in strict mode
+* ObjectExpression must not have data and getter properties with the same name
+* ObjectExpression must not have data and setter properties with the same name
+* ObjectExpression must not have data and getter properties with the same name
+* ObjectExpression must not have multiple getters with the same name
+* ObjectExpression must not have data and setter properties with the same name
+* ObjectExpression must not have multiple setters with the same name
 * ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node
 * SequenceExpression `expressions` member length must be >= 2
 * SwitchStatement `cases` member must contain no more than one SwitchCase with a null `test` member
