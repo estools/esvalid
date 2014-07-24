@@ -57,6 +57,8 @@ This is a list of all esvalid validity tests other than `null` tests and type ch
 * labelled BreakStatement must have a matching LabeledStatement ancestor
 * ContinueStatement must have an IterationStatement as an ancestor
 * labelled ContinueStatement must have a matching LabeledStatement ancestor
+* FunctionDeclaration parameter names must be unique in strict mode
+* FunctionExpression parameter names must be unique in strict mode
 * Identifier `name` member must be a valid IdentifierName
 * Identifier `name` member must not be a ReservedWord
 * IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`

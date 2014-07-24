@@ -89,6 +89,7 @@ var E, InvalidAstError = E = (function() {
 function errorsP(state) {
   return function recurse(node) {
     var errors = [], line, column, strict, recursionFn;
+    var paramSet, initKeySet, getKeySet, setKeySet;
 
     if (node.loc != null) {
       if (node.loc.source != null && typeof node.loc.source !== "string")
@@ -297,17 +298,26 @@ function errorsP(state) {
         break;
 
       case "FunctionDeclaration":
+        paramSet = {};
         if (node.id == null || node.id.type !== "Identifier")
           errors.push(new E(node, "FunctionDeclaration `id` member must be an Identifier node"));
         if (node.params == null)
           errors.push(new E(node, "FunctionDeclaration `params` member must be non-null"));
         else
           [].push.apply(errors, concatMap(function(param) {
+            var es = [];
             if (param == null)
               return [new E(node, "FunctionDeclaration `params` member must not contain null values")];
-            else if (!isExpression(param))
-              return [new E(param, "FunctionDeclaration params must be expression nodes")];
-            return recurse(param);
+            if (!isExpression(param)) {
+              es.push(new E(param, "FunctionDeclaration params must be expression nodes"));
+            } else if (state.strict && param.type === "Identifier") {
+              if (paramSet.hasOwnProperty("$" + param.name))
+                es.push(new E(param, "FunctionDeclaration parameter names must be unique in strict mode"));
+              else
+                paramSet["$" + param.name] = true;
+            }
+            [].push.apply(es, recurse(param));
+            return es;
           }, node.params));
         if (node.body == null || node.body.type !== "BlockStatement")
           errors.push(new E(node, "FunctionDeclaration `body` member must be an BlockStatement node"));
@@ -327,17 +337,26 @@ function errorsP(state) {
         break;
 
       case "FunctionExpression":
+        paramSet = {};
         if (node.id != null && node.id.type !== "Identifier")
           errors.push(new E(node, "FunctionExpression `id` member must be an Identifier node or null"));
         if (node.params == null)
           errors.push(new E(node, "FunctionExpression `params` member must be non-null"));
         else
           [].push.apply(errors, concatMap(function(param) {
+            var es = [];
             if (param == null)
               return [new E(node, "FunctionExpression `params` member must not contain null values")];
-            else if (!isExpression(param))
-              return [new E(param, "FunctionExpression params must be expression nodes")];
-            return recurse(param);
+            if (!isExpression(param)) {
+              es.push(new E(param, "FunctionExpression params must be expression nodes"));
+            } else if (state.strict && param.type === "Identifier") {
+              if (paramSet.hasOwnProperty("$" + param.name))
+                es.push(new E(param, "FunctionExpression parameter names must be unique in strict mode"));
+              else
+                paramSet["$" + param.name] = true;
+            }
+            [].push.apply(es, recurse(param));
+            return es;
           }, node.params));
         if (node.body == null || node.body.type !== "BlockStatement")
           errors.push(new E(node, "FunctionExpression `body` member must be an BlockStatement node"));
@@ -476,7 +495,9 @@ function errorsP(state) {
         if (node.properties == null) {
           errors.push(new E(node, "ObjectExpression `properties` member must be non-null"));
         } else {
-          var initKeySet = {}, getKeySet = {}, setKeySet = {};
+          initKeySet = {};
+          getKeySet = {};
+          setKeySet = {};
           [].push.apply(errors, concatMap(function(property) {
             var es = [], key;
             if (property == null)

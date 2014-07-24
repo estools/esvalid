@@ -27,6 +27,20 @@ suite("strict mode", function() {
     validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
   });
 
+  test("FunctionDeclaration parameter names must be unique in strict mode", function() {
+    validExpr(strictFE({type: "FunctionDeclaration", id: ID, params: [ID], body: BLOCK}));
+    validExpr(strictFE({type: "FunctionDeclaration", id: ID, params: [{type: "Identifier", name: "a"}, {type: "Identifier", name: "A"}], body: BLOCK}));
+    validStmt({type: "FunctionDeclaration", id: ID, params: [ID, ID], body: BLOCK});
+    invalidExpr(1, strictFE({type: "FunctionDeclaration", id: ID, params: [ID, ID], body: BLOCK}));
+  });
+
+  test("FunctionExpression parameter names must be unique in strict mode", function() {
+    validExpr(strictFE(exprStmt({type: "FunctionExpression", id: ID, params: [ID], body: BLOCK})));
+    validExpr(strictFE(exprStmt({type: "FunctionExpression", id: ID, params: [{type: "Identifier", name: "a"}, {type: "Identifier", name: "A"}], body: BLOCK})));
+    validExpr({type: "FunctionExpression", id: ID, params: [ID, ID], body: BLOCK});
+    invalidExpr(1, strictFE(exprStmt({type: "FunctionExpression", id: ID, params: [ID, ID], body: BLOCK})));
+  });
+
   test("Identifier FutureReservedWords", function() {
     validExpr({type: "Identifier", name: "let"});
     validExpr({type: "Identifier", name: "yield"}); // ES5 only

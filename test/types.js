@@ -202,7 +202,8 @@ suite("type checks", function() {
 
   test("FunctionDeclaration", function() {
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: BLOCK});
-    validStmt({type: "FunctionDeclaration", id: ID, params: [ID, ID], body: BLOCK});
+    validStmt({type: "FunctionDeclaration", id: ID, params: [ID], body: BLOCK});
+    validStmt({type: "FunctionDeclaration", id: ID, params: [{type: "Identifier", name: "a"}, {type: "Identifier", name: "b"}], body: BLOCK});
     validStmt({type: "FunctionDeclaration", id: ID, params: [], body: {type: "BlockStatement", body: [FD(STMT)]}});
     invalidStmt(3, {type: "FunctionDeclaration"});
     invalidStmt(1, {type: "FunctionDeclaration", params: [], body: BLOCK});
@@ -219,7 +220,8 @@ suite("type checks", function() {
     validExpr({type: "FunctionExpression", params: [], body: BLOCK});
     validExpr({type: "FunctionExpression", id: null, params: [], body: BLOCK});
     validExpr({type: "FunctionExpression", id: ID, params: [], body: BLOCK});
-    validExpr({type: "FunctionExpression", id: ID, params: [ID, ID], body: BLOCK});
+    validExpr({type: "FunctionExpression", id: ID, params: [ID], body: BLOCK});
+    validExpr({type: "FunctionExpression", id: ID, params: [{type: "Identifier", name: "a"}, {type: "Identifier", name: "b"}], body: BLOCK});
     validExpr({type: "FunctionExpression", params: [], body: {type: "BlockStatement", body: [FD(STMT)]}});
     invalidExpr(2, {type: "FunctionExpression"});
     invalidExpr(1, {type: "FunctionExpression", params: []});
