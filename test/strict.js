@@ -27,6 +27,18 @@ suite("strict mode", function() {
     validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
   });
 
+  test("Function names must not be restricted in strict mode", function() {
+    validExpr(strictFE(exprStmt({type: "FunctionExpression", id: null, params: [], body: BLOCK})));
+    validExpr({type: "FunctionExpression", id: {type: "Identifier", name: "eval"}, params: [], body: BLOCK});
+    validExpr({type: "FunctionExpression", id: {type: "Identifier", name: "arguments"}, params: [], body: BLOCK});
+    validStmt({type: "FunctionDeclaration", id: {type: "Identifier", name: "eval"}, params: [], body: BLOCK});
+    validStmt({type: "FunctionDeclaration", id: {type: "Identifier", name: "arguments"}, params: [], body: BLOCK});
+    invalidExpr(1, strictFE(exprStmt({type: "FunctionExpression", id: {type: "Identifier", name: "eval"}, params: [], body: BLOCK})));
+    invalidExpr(1, strictFE(exprStmt({type: "FunctionExpression", id: {type: "Identifier", name: "arguments"}, params: [], body: BLOCK})));
+    invalidExpr(1, strictFE({type: "FunctionDeclaration", id: {type: "Identifier", name: "eval"}, params: [], body: BLOCK}));
+    invalidExpr(1, strictFE({type: "FunctionDeclaration", id: {type: "Identifier", name: "arguments"}, params: [], body: BLOCK}));
+  });
+
   test("FunctionDeclaration parameter names must be unique in strict mode", function() {
     validExpr(strictFE({type: "FunctionDeclaration", id: ID, params: [ID], body: BLOCK}));
     validExpr(strictFE({type: "FunctionDeclaration", id: ID, params: [{type: "Identifier", name: "a"}, {type: "Identifier", name: "A"}], body: BLOCK}));

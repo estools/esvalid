@@ -301,6 +301,8 @@ function errorsP(state) {
         paramSet = {};
         if (node.id == null || node.id.type !== "Identifier")
           errors.push(new E(node, "FunctionDeclaration `id` member must be an Identifier node"));
+        else if (state.strict && esutils.keyword.isRestrictedWord(node.id.name))
+          errors.push(new E(node, "FunctionDeclaration `id` member must not be `eval` or `arguments` in strict mode"));
         if (node.params == null)
           errors.push(new E(node, "FunctionDeclaration `params` member must be non-null"));
         else
@@ -338,8 +340,12 @@ function errorsP(state) {
 
       case "FunctionExpression":
         paramSet = {};
-        if (node.id != null && node.id.type !== "Identifier")
-          errors.push(new E(node, "FunctionExpression `id` member must be an Identifier node or null"));
+        if (node.id != null) {
+          if (node.id.type !== "Identifier")
+            errors.push(new E(node, "FunctionExpression `id` member must be an Identifier node or null"));
+          else if (state.strict && esutils.keyword.isRestrictedWord(node.id.name))
+            errors.push(new E(node, "FunctionExpression `id` member must not be `eval` or `arguments` in strict mode"));
+        }
         if (node.params == null)
           errors.push(new E(node, "FunctionExpression `params` member must be non-null"));
         else
