@@ -204,6 +204,8 @@ function errorsP(state) {
       case "CatchClause":
         if (!isExpression(node.param))
           errors.push(new E(node, "CatchClause `param` member must be an expression node"));
+        else if (state.strict && node.param.type === "Identifier" && esutils.keyword.isRestrictedWord(node.param.name))
+          errors.push(new E(node, "CatchClause `param` member must not be `eval` or `arguments` in strict mode"));
         if (node.body == null || node.body.type !== "BlockStatement")
           errors.push(new E(node, "CatchClause `body` member must be a BlockStatement node"));
         if (node.param != null)

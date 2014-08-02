@@ -27,6 +27,14 @@ suite("strict mode", function() {
     validExpr(FE(exprStmt({type: "Literal", value: "use strict"})));
   });
 
+  test("CatchClause param must not be restricted in strict mode", function() {
+    validStmt({type: "TryStatement", block: BLOCK, handler: {type: "CatchClause", param: {type: "Identifier", name: "eval"}, body: BLOCK}});
+    validStmt({type: "TryStatement", block: BLOCK, handler: {type: "CatchClause", param: {type: "Identifier", name: "arguments"}, body: BLOCK}});
+    validExpr(strictFE({type: "TryStatement", block: BLOCK, handler: {type: "CatchClause", param: {type: "Identifier", name: "x"}, body: BLOCK}}));
+    invalidExpr(1, strictFE({type: "TryStatement", block: BLOCK, handler: {type: "CatchClause", param: {type: "Identifier", name: "eval"}, body: BLOCK}}));
+    invalidExpr(1, strictFE({type: "TryStatement", block: BLOCK, handler: {type: "CatchClause", param: {type: "Identifier", name: "arguments"}, body: BLOCK}}));
+  });
+
   test("Function names must not be restricted in strict mode", function() {
     validExpr(strictFE(exprStmt({type: "FunctionExpression", id: null, params: [], body: BLOCK})));
     validExpr({type: "FunctionExpression", id: {type: "Identifier", name: "eval"}, params: [], body: BLOCK});
