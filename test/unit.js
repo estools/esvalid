@@ -172,4 +172,7 @@ suite("unit", function() {
     invalidStmt(1, {type: "VariableDeclaration", kind: "var", declarations: []});
   });
 
+  test("VariableDeclaration `declarations` member must contain exactly one child inside the `left` member of a ForInStatement", function() {
+    invalidStmt(1, {type: "ForInStatement", left: {type: "VariableDeclaration", kind: "var", declarations: [{type: "VariableDeclarator", id: ID}, {type: "VariableDeclarator", id: ID}]}, right: EXPR, body: STMT});
+  });
 });
