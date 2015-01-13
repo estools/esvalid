@@ -3,7 +3,7 @@
 
 var assert = require("assert");
 
-var esvalid = require("..");
+var esvalid = require("../");
 
 var helpers = require("../test-helpers");
 var STMT = helpers.STMT, BLOCK = helpers.BLOCK, EXPR = helpers.EXPR,

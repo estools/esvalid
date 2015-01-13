@@ -4,7 +4,7 @@ var assert = require("assert");
 var fs = require("fs");
 
 var esprima = require("esprima");
-var esvalid = require("..");
+var esvalid = require("../");
 
 function validate(lib) {
   return function test(done) {
