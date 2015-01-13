@@ -1,6 +1,6 @@
 "use strict";
 
-var esvalid = require(".");
+var esvalid = require("./");
 var assert = require("assert");
 
 var STMT = {type: "EmptyStatement"};
