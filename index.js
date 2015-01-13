@@ -437,14 +437,10 @@ function errorsP(state) {
           case "String":
             break;
           case "Number":
-            if (node.value !== node.value) {
+            if (node.value !== node.value)
               errors.push(new E(node, "numeric Literal nodes must not be NaN"));
-            } else {
-              if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
+            else if (node.value < 0 || node.value === 0 && 1 / node.value < 0)
               errors.push(new E(node, "numeric Literal nodes must be non-negative"));
-              if (!isFinite(node.value))
-                errors.push(new E(node, "numeric Literal nodes must be finite"));
-            }
             break;
           default:
             errors.push(new E(node, "Literal nodes must have a boolean, null, regexp, string, or number as the `value` member"));
