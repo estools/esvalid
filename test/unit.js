@@ -92,15 +92,16 @@ suite("unit", function() {
   });
 
   test("numeric Literal nodes must be non-negative", function() {
+    validExpr({type: "Literal", value: 1 / 0});
+    validExpr({type: "Literal", value: 1e308});
+    validExpr({type: "Literal", value: 1});
+    validExpr({type: "Literal", value: 1e-308});
+    validExpr({type: "Literal", value: 0});
     invalidExpr(1, {type: "Literal", value: -0});
+    invalidExpr(1, {type: "Literal", value: -1e-308});
     invalidExpr(1, {type: "Literal", value: -1});
     invalidExpr(1, {type: "Literal", value: -1e308});
-    invalidExpr(1, {type: "Literal", value: -1e-308});
-  });
-
-  test("numeric Literal nodes must be finite", function() {
-    invalidExpr(1, {type: "Literal", value: 1 / 0});
-    invalidExpr(2, {type: "Literal", value: -1 / 0});
+    invalidExpr(1, {type: "Literal", value: -1 / 0});
   });
 
   test("static MemberExpression `property` member must have a valid IdentifierName `name` member", function() {
