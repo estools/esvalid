@@ -272,8 +272,14 @@ function errorsP(state) {
           errors.push(new E(node, "ForInStatement `right` member must be an expression node"));
         if (!isStatement(node.body))
           errors.push(new E(node, "ForInStatement `body` member must be a statement node"));
-        if (node.left != null)
+        if (node.left != null) {
+          if (node.left.type === "VariableDeclaration") {
+            if (node.left.declarations == null || node.left.declarations.length !== 1) {
+              errors.push(new E(node, "VariableDeclaration `declarations` member must contain exactly one child inside the `left` member of a ForInStatement"));
+            }
+          }
           [].push.apply(errors, recurse(node.left));
+        }
         if (node.right != null)
           [].push.apply(errors, recurse(node.right));
         if (node.body != null)
