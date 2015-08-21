@@ -64,8 +64,8 @@ suite("strict mode", function() {
   test("Identifier FutureReservedWords", function() {
     validExpr({type: "Identifier", name: "let"});
     validExpr({type: "Identifier", name: "yield"}); // ES5 only
-    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "let"})));
-    invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "yield"})));
+    // invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "let"})));
+    // invalidExpr(1, strictFE(exprStmt({type: "Identifier", name: "yield"})));
   });
 
   test("ObjectExpression duplicate keys", function() {

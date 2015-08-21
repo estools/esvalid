@@ -85,8 +85,12 @@ var E, InvalidAstError = E = (function() {
 }());
 
 
-// errorsP :: {labels :: [Label], inFunc :: Boolean, inIter :: Boolean, inSwitch :: Boolean} -> Node -> [InvalidAstError]
+// errorsP :: {labels :: [Label], inFunc :: Boolean, inIter :: Boolean, inSwitch :: Boolean, ES6 :: Boolean } -> Node -> [InvalidAstError]
 function errorsP(state) {
+
+  function isReservedWord (e) { return state.ES6 ? esutils.keyword.isReservedWordES6(e) : esutils.keyword.isReservedWordES5(e); }
+  function isIdentifierName (e) { return state.ES6 ? esutils.keyword.isIdentifierNameES6(e) : esutils.keyword.isIdentifierNameES5(e); }
+
   return function recurse(node) {
     var errors = [], line, column, strict, recursionFn;
     var paramSet, initKeySet, getKeySet, setKeySet;
@@ -386,9 +390,9 @@ function errorsP(state) {
       case "Identifier":
         if (node.name == null)
           errors.push(new E(node, "Identifier `name` member must be non-null"));
-        else if (!esutils.keyword.isIdentifierName(node.name))
+        else if (!isIdentifierName(node.name))
           errors.push(new E(node, "Identifier `name` member must be a valid IdentifierName"));
-        else if (esutils.keyword.isReservedWordES5(node.name, state.strict))
+        else if (isReservedWord(node.name, state.strict))
           errors.push(new E(node, "Identifier `name` member must not be a ReservedWord"));
         break;
 
@@ -470,7 +474,7 @@ function errorsP(state) {
             [].push.apply(errors, recurse(node.property));
         } else if (node.property == null || node.property.type !== "Identifier") {
             errors.push(new E(node, "static MemberExpression `property` member must be an Identifier node"));
-        } else if (node.property.name == null || !esutils.keyword.isIdentifierName(node.property.name)) {
+        } else if (node.property.name == null || !isIdentifierName(node.property.name)) {
             errors.push(new E(node, "static MemberExpression `property` member must have a valid IdentifierName `name` member"));
         }
         if (node.object != null)
@@ -536,7 +540,7 @@ function errorsP(state) {
             } else {
               switch (property.key.type) {
                 case "Identifier":
-                  if (property.key.name == null || !esutils.keyword.isIdentifierName(property.key.name))
+                  if (property.key.name == null || !isIdentifierName(property.key.name))
                     es.push(new E(property, "ObjectExpression property `key` members of type Identifier must be an IdentifierName"));
                   else
                     key = "$" + property.key.name;
