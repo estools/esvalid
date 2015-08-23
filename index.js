@@ -88,8 +88,8 @@ var E, InvalidAstError = E = (function() {
 // errorsP :: {labels :: [Label], inFunc :: Boolean, inIter :: Boolean, inSwitch :: Boolean, ES6 :: Boolean } -> Node -> [InvalidAstError]
 function errorsP(state) {
 
-  function isReservedWord (e) { return state.ES6 ? esutils.keyword.isReservedWordES6(e) : esutils.keyword.isReservedWordES5(e); }
-  function isIdentifierName (e) { return state.ES6 ? esutils.keyword.isIdentifierNameES6(e) : esutils.keyword.isIdentifierNameES5(e); }
+  function isReservedWord (e) { return state.version === "ES6" ? esutils.keyword.isReservedWordES6(e) : esutils.keyword.isReservedWordES5(e); }
+  function isIdentifierName (e) { return state.version === "ES6" ? esutils.keyword.isIdentifierNameES6(e) : esutils.keyword.isIdentifierNameES5(e); }
 
   return function recurse(node) {
     var errors = [], line, column, strict, recursionFn;
@@ -121,6 +121,22 @@ function errorsP(state) {
     }
 
     switch (node.type) {
+
+      case "ArrayPattern":
+        if (state.version !== "ES6")
+          errors.push(new E(node, "ArrayPattern allowed only in ES6 mode"));
+        else
+          if (node.elements == null)
+            errors.push(new E(node, "ArrayPattern `elements` member must be non-null"));
+          else
+            [].push.apply(errors, concatMap(function(element) {
+              if (element == null)
+                return [];
+              else if (!isExpression(element))
+                return [new E(element, "non-null ArrayPattern elements must be expression nodes")];
+              return recurse(element);
+            }, node.elements));
+        break;
 
       case "ArrayExpression":
         if (node.elements == null)
@@ -806,28 +822,31 @@ var START_STATE = {labels: [], inFunc: false, inIter: false, inSwitch: false, st
 module.exports = {
 
   // isValid :: Maybe Node -> Boolean
-  isValid: function isValid(node) {
+  isValid: function isValid(node, opt) {
+    var state = opt ? merge({}, START_STATE, opt) : START_STATE;
     return node != null && node.type === "Program" &&
-      errorsP(START_STATE)(node).length < 1;
+      errorsP(state)(node).length < 1;
   },
 
   // isValidExpression :: Maybe Node -> Boolean
-  isValidExpression: function isValidExpression(node) {
-    return isExpression(node) && errorsP(START_STATE)(node).length < 1;
+  isValidExpression: function isValidExpression(node, opt) {
+    var state = opt ? merge({}, START_STATE, opt) : START_STATE;
+    return isExpression(node) && errorsP(state)(node).length < 1;
   },
 
   // InvalidAstError :: Node -> String -> InvalidAstError
   InvalidAstError: InvalidAstError,
 
   // errors :: Maybe Node -> [InvalidAstError]
-  errors: function errors(node) {
+  errors: function errors(node, opt) {
     var errors = [];
+    var state = opt ? merge({}, START_STATE, opt) : START_STATE;
     if (node == null) {
       errors.push(new E(node, "given AST node should be non-null"));
     } else {
       if (node.type !== "Program")
         errors.push(new E(node, "given AST node should be of type Program"));
-      [].push.apply(errors, errorsP(START_STATE)(node));
+      [].push.apply(errors, errorsP(state)(node));
     }
     return errors;
   }

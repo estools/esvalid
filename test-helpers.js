@@ -25,18 +25,18 @@ function label(l, n) { return {type: "LabeledStatement", label: {type: "Identifi
 function exprStmt(e) { return {type: "ExpressionStatement", expression: e}; }
 
 
-function validStmt(x, msg) { assert.ok(esvalid.isValid(wrapProgram(x)), msg); }
-function invalidStmt(n, x, msg) {
-  assert.ok(!esvalid.isValid(wrapProgram(x)), msg);
-  var errors = esvalid.errors(wrapProgram(x));
+function validStmt(x, msg, opt) { assert.ok(esvalid.isValid(wrapProgram(x), opt), msg); }
+function invalidStmt(n, x, msg, opt) {
+  assert.ok(!esvalid.isValid(wrapProgram(x), opt), msg);
+  var errors = esvalid.errors(wrapProgram(x), opt);
   errors.forEach(function(e) { assert.notEqual(e.node, null, msg); });
   assert.equal(n, errors.length, msg);
 }
 
-function validExpr(x, msg) { assert.ok(esvalid.isValidExpression(x), msg); }
-function invalidExpr(n, x, msg) {
-  assert.ok(!esvalid.isValidExpression(x), msg);
-  var errors = esvalid.errors(wrapProgram(exprStmt(x)));
+function validExpr(x, msg, opt) { assert.ok(esvalid.isValidExpression(x, opt), msg); }
+function invalidExpr(n, x, msg, opt) {
+  assert.ok(!esvalid.isValidExpression(x, opt), msg);
+  var errors = esvalid.errors(wrapProgram(exprStmt(x)), opt);
   errors.forEach(function(e) { assert.notEqual(e.node, null, msg); });
   assert.equal(n, errors.length, msg);
 }
